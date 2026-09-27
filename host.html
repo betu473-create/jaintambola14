@@ -72,7 +72,7 @@
         <option value="7000">ऑटो मोड: तेज़ (7 सेकंड)</option>
       </select>
     </div>
-    <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में 3 बार बोलकर सुनाएगा। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
+    <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में 3 बार बोलकर सुनाएगी। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
   </div>
 
   <div class="word-card">
@@ -127,17 +127,6 @@
   </div>
 
   <div class="card">
-    <h2>➕ शब्द सूची में नया शब्द जोड़ें</h2>
-    <div class="word-add-row">
-      <input id="word-add-input" type="text" placeholder="नया शब्द लिखें..." maxlength="40">
-      <button class="btn small" id="word-add-btn" type="button">जोड़ें</button>
-    </div>
-    <div class="word-add-result" id="word-add-result"></div>
-    <p class="muted">यह शब्द इस फोन में सेव रहेगा और अगले गेम में उपयोग होगा।</p>
-    <a class="btn ghost" href="./words.html" style="margin-top:8px;width:100%">✏️ पूरी सूची में जोड़ें / हटाएँ / ठीक करें →</a>
-  </div>
-
-  <div class="card">
     <h2>⚡ Claim रिपोर्ट</h2>
     <div id="claims"><span class="muted">अभी कोई क्लेम नहीं आया</span></div>
   </div>
@@ -177,5 +166,7 @@
 <script src="./js/fx.js"></script>
 <script src="./js/host.js"></script>
 <script src="./js/pwa.js"></script>
+<!-- host.js compatibility (word-add card removed in v5.5) -->
+<button id="word-add-btn" type="button" hidden></button>
 </body>
 </html>
