@@ -1,0 +1,157 @@
+/* ============================================================
+   जैन ताम्बोला v8 — मुख्य स्टाइल (सुंदर, मोबाइल-फर्स्ट)
+   ============================================================ */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Noto Sans Devanagari','Nirmala UI','Mangal',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, #ffe0b2 0%, rgba(255,224,178,0) 60%),
+    linear-gradient(165deg,#fffaf0 0%,#fff3e0 55%,#ffe8cc 100%);
+  min-height:100vh;color:#3e2723;
+}
+.wrap{max-width:600px;margin:0 auto;padding:16px 14px 56px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.brand{font-size:1.15rem;font-weight:800;color:#bf360c;letter-spacing:.2px}
+.topbar a{color:#e65100;text-decoration:none;font-weight:700;font-size:.9rem}
+.card{background:rgba(255,255,255,.95);border:1px solid #ffecdf;border-radius:18px;box-shadow:0 6px 18px rgba(191,54,12,.08);padding:18px 16px;margin:14px 0}
+.card h2{margin:0 0 12px;font-size:1.08rem;color:#bf360c}
+.muted{color:#8d6e63;font-size:.85rem;line-height:1.55}
+a{color:#e65100}
+.status{background:#fff3e0;border:1px dashed #ffb74d;border-radius:12px;padding:10px 12px;font-size:.92rem;color:#6d4c41;margin:10px 0;line-height:1.5}
+.designed-by{text-align:center;font-size:.88rem;color:#795548;font-weight:600;margin:16px 0 0;padding:10px;border-top:1px solid #ffe0b2}
+
+/* ---------- बटन ---------- */
+.btn{display:inline-block;width:100%;padding:14px 18px;font-size:1.02rem;font-weight:700;font-family:inherit;text-align:center;text-decoration:none;
+  background:linear-gradient(135deg,#f57c00,#e65100);color:#fff;border:none;border-radius:14px;cursor:pointer;margin:6px 0;
+  box-shadow:0 4px 12px rgba(230,81,0,.28)}
+.btn:active{transform:scale(.98)}
+.btn.green{background:linear-gradient(135deg,#66bb6a,#2e7d32);box-shadow:0 4px 12px rgba(46,125,50,.28)}
+.btn.ghost{background:#fff;color:#d84315;border:2px solid #ffb74d;box-shadow:none}
+.btn.small{width:auto;font-size:.85rem;padding:9px 14px;margin:4px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row>.btn{flex:1 1 45%}
+.btn-row>a.btn,.btn-row>button,.btn-row>select{flex:1 1 45%}
+.btn.pulse{animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,.5)}50%{box-shadow:0 0 0 12px rgba(46,125,50,0)}}
+
+/* ---------- इनपुट ---------- */
+.txt{width:100%;padding:13px 14px;margin:6px 0;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fffdf7;color:#3e2723}
+.txt:focus{outline:2px solid #ef6c00}
+select{padding:11px 12px;border:1.5px solid #ffcc80;border-radius:12px;font-family:inherit;font-size:.95rem;background:#fff;color:#4e342e;width:100%}
+.linkbox{display:flex;gap:8px;align-items:stretch}
+.linkbox input{flex:1;min-width:0;padding:10px 12px;border:1.5px solid #ffcc80;border-radius:12px;font-size:.85rem;background:#fffde7;color:#5d4037}
+.roomcode{font-size:2.1rem;font-weight:800;letter-spacing:.3em;text-indent:.3em;color:#e65100;text-align:center;margin:8px 0 12px}
+
+/* ---------- टाइमर ---------- */
+.timer{display:inline-flex;align-items:center;gap:6px;background:#263238;color:#ffd54f;border-radius:999px;padding:8px 16px;font-size:1rem;font-weight:800;font-variant-numeric:tabular-nums}
+.timer-bar{text-align:center;margin:10px 0}
+
+/* ---------- एनाउंसमेंट बैनर ---------- */
+.announce-banner{display:none;background:#c62828;color:#fff;border-radius:12px;padding:12px 16px;font-size:.95rem;font-weight:700;margin:10px 0;text-align:center;animation:pop .5s ease}
+.announce-banner.show{display:block}
+
+/* ---------- बड़ा शब्द कार्ड ---------- */
+.word-card{background:linear-gradient(140deg,#f57c00,#bf360c);color:#fff;border-radius:22px;padding:30px 16px 26px;margin:16px 0;text-align:center;min-height:170px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 10px 24px rgba(191,54,12,.30)}
+.word-label{font-size:.9rem;opacity:.85;font-weight:700;letter-spacing:.5px}
+#current-shabd{font-size:clamp(2rem,10vw,3.2rem);font-weight:800;line-height:1.25;word-break:break-word;padding:6px 4px;min-height:1.3em}
+.word-sub{font-size:.82rem;opacity:.85;margin-top:6px}
+.countdown{font-size:.95rem;font-weight:700;background:rgba(255,255,255,.18);border-radius:999px;padding:6px 14px;margin-top:12px;display:none}
+.countdown.show{display:inline-block}
+.pop{animation:pop .55s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(.35);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+
+/* ---------- चिप्स व पिल्स ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{background:#ffe0b2;color:#5d4037;border-radius:999px;padding:5px 12px;font-size:.8rem;font-weight:700}
+.players{display:flex;flex-wrap:wrap;gap:6px}
+.player-pill{background:#e0f2f1;color:#00695c;border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:700;cursor:pointer;border:none;font-family:inherit}
+.player-pill.warn{background:#ffebee;color:#b71c1c}
+.claim-row{background:#fff8e1;border-left:4px solid #ffb300;border-radius:8px;padding:8px 12px;margin:6px 0;font-size:.9rem}
+
+/* ---------- टिकट ---------- */
+.ticket{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.cell{background:#fff;border:2px solid #ffcc80;border-radius:14px;padding:6px 4px;min-height:72px;font-size:.9rem;font-weight:700;font-family:inherit;color:#4e342e;cursor:pointer;line-height:1.25;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:transform .1s}
+.cell-num{display:block;font-size:.72rem;font-weight:800;color:#e65100;background:#fff3e0;border-radius:6px;padding:1px 6px;margin-bottom:3px;line-height:1.4}
+.cell-word{display:block;font-size:.9rem;line-height:1.3;word-break:break-word}
+.cell:active{transform:scale(.96)}
+.cell.came{border-color:#e65100;box-shadow:0 0 0 3px rgba(230,81,0,.18)}
+.cell.marked{background:linear-gradient(135deg,#66bb6a,#2e7d32);border-color:#2e7d32;color:#fff}
+.cell.marked .cell-num{background:rgba(255,255,255,.3);color:#fff}
+.cell.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.progress{font-size:.95rem;font-weight:800;color:#bf360c;text-align:center}
+
+/* ---------- रिपीट बटन ---------- */
+.repeat-row{text-align:center;margin:8px 0}
+
+/* ---------- चैट ---------- */
+.chat-box{background:#fff8ee;border:1.5px solid #ffe0b2;border-radius:14px;padding:12px;margin:10px 0}
+.chat-msgs{max-height:220px;overflow-y:auto;padding:4px 0}
+.chat-msg{margin:6px 0;padding:8px 12px;border-radius:12px;max-width:85%;font-size:.88rem;line-height:1.4;word-break:break-word}
+.chat-msg.me{background:#e3f2fd;margin-left:auto;text-align:right}
+.chat-msg.host{background:#fff3e0}
+.chat-msg.sys{background:#f1f8e9;text-align:center;max-width:100%;font-size:.8rem;color:#558b2f}
+.chat-msg b{display:block;font-size:.75rem;color:#78909c;margin-bottom:2px}
+.chat-input-row{display:flex;gap:8px;margin-top:8px}
+.chat-input-row input{flex:1;min-width:0;padding:10px 12px;border:1.5px solid #ffcc80;border-radius:10px;font-size:.9rem;font-family:inherit;background:#fff}
+
+/* ---------- विजेता ---------- */
+.winner{display:none;background:linear-gradient(135deg,#ffca28,#ff8f00);color:#4e2600;border-radius:18px;padding:22px 16px;text-align:center;font-size:1.35rem;font-weight:800;margin:14px 0;box-shadow:0 8px 20px rgba(255,143,0,.35)}
+.winner.show{display:block;animation:pop .6s cubic-bezier(.2,1.4,.4,1)}
+.winner-big{display:none;position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px}
+.winner-big.show{display:flex}
+.winner-big-inner{background:linear-gradient(150deg,#ffca28,#ff8f00);border-radius:24px;padding:40px 30px;text-align:center;max-width:400px;width:100%;animation:pop .7s cubic-bezier(.2,1.4,.4,1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.winner-big-inner .trophy{font-size:4rem;line-height:1;margin-bottom:10px}
+.winner-big-inner .wname{font-size:1.8rem;font-weight:800;color:#4e2600;margin:10px 0}
+.winner-big-inner .wsub{font-size:1rem;color:#6d4c41}
+
+/* ---------- हिस्ट्री व लीडरबोर्ड ---------- */
+.history-item{background:#f5f5f5;border-left:4px solid #78909c;border-radius:8px;padding:10px 14px;margin:6px 0;font-size:.88rem}
+.history-item b{color:#37474f}
+.history-winner{color:#2e7d32;font-weight:700}
+.leader-row{display:flex;justify-content:space-between;align-items:center;background:#fffde7;border:1px solid #ffe082;border-radius:10px;padding:10px 14px;margin:6px 0;font-size:.92rem}
+.leader-row .rank{font-size:1.2rem;font-weight:800;color:#e65100;min-width:34px}
+.leader-row .lname{font-weight:700;flex:1}
+
+/* ---------- म्यूज़िक ---------- */
+.music-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.music-row audio{flex:1;min-width:200px;height:36px}
+
+/* ---------- शब्द जोड़ना ---------- */
+.word-add-row{display:flex;gap:8px}
+.word-add-row input{flex:1;min-width:0;padding:10px 12px;border:1.5px solid #ffcc80;border-radius:10px;font-size:.95rem;font-family:inherit;background:#fff}
+.word-add-result{font-size:.82rem;color:#2e7d32;font-weight:600;margin:4px 0}
+
+/* ---------- नियम ---------- */
+.rules li{margin:14px 0;line-height:1.7;font-size:.97rem}
+.rules{padding-left:22px}
+.mantra{text-align:center;font-weight:800;color:#bf360c;margin:18px 0 4px;font-size:1.1rem}
+
+/* ---------- लोगो blur बैकग्राउंड ---------- */
+.logo-wrap{position:relative;display:inline-block;padding:18px;border-radius:50%}
+.logo-blur{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,224,178,.9) 0%,rgba(255,238,170,.4) 50%,transparent 70%);filter:blur(18px);z-index:0}
+.logo-wrap img{position:relative;z-index:1}
+
+/* ---------- गेम ओवर स्क्रीन ---------- */
+.game-over{display:none;position:fixed;inset:0;z-index:105;background:rgba(62,39,35,.9);align-items:center;justify-content:center;padding:20px}
+.game-over.show{display:flex}
+.game-over-inner{background:linear-gradient(160deg,#fff8ec,#ffe0b2);border-radius:24px;padding:36px 28px;text-align:center;max-width:380px;width:100%;animation:pop .7s cubic-bezier(.2,1.4,.4,1);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.game-over-inner .go-icon{font-size:3.2rem;line-height:1;margin-bottom:8px}
+.game-over-inner .go-title{font-size:1.5rem;font-weight:800;color:#bf360c;margin:8px 0}
+.game-over-inner .go-winner{font-size:1.1rem;color:#2e7d32;font-weight:700;margin:6px 0 12px}
+.game-over-inner .go-sub{font-size:.88rem;color:#6d4c41;margin-bottom:16px}
+
+/* ---------- टोस्ट ---------- */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#3e2723;color:#fff;padding:11px 20px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+
+/* ---------- मॉडल ---------- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(62,39,35,.55);z-index:100;align-items:center;justify-content:center;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:18px;padding:18px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
+
+/* ---------- कॉन्फ़ेटी ---------- */
+.confetti{position:fixed;top:-14px;width:10px;height:14px;z-index:98;pointer-events:none;animation:fall linear forwards;border-radius:2px}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}

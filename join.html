@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>खिलाड़ी — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला ऑनलाइन गेम — खिलाड़ी स्क्रीन">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#e65100">
+<link rel="stylesheet" href="./css/style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">जैन ताम्बोला — खिलाड़ी</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="./words.html">शब्द सूची</a>
+      <a href="./index.html">होम</a>
+    </div>
+  </div>
+
+  <!-- नाम + रूम कोड -->
+  <div class="card" id="join-card">
+    <h2>🎯 गेम में शामिल हों</h2>
+    <div class="status" id="p-status">होस्ट से मिले लिंक पर आप सही जगह पर हैं — अपना नाम लिखकर जुड़ें।</div>
+    <input class="txt" id="name-input" placeholder="अपना नाम लिखें" maxlength="30" autocomplete="name">
+    <div id="room-label">
+      <input class="txt" id="room-input" placeholder="रूम कोड (6 अक्षर)" maxlength="6" style="text-transform:uppercase" autocomplete="off">
+    </div>
+    <button class="btn" id="join-btn" type="button">गेम में जुड़ें</button>
+    <p class="muted">नियम: एक खिलाड़ी एक फोन से एक ही लाइव डिजिटल टिकट से खेल सकता है।</p>
+  </div>
+
+  <!-- गेम व्यू -->
+  <div id="game-card" style="display:none">
+    <div class="announce-banner" id="announce-banner"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <b id="p-name"></b>
+        <button class="btn small ghost" id="mute-btn" type="button">🔊 आवाज़ चालू</button>
+      </div>
+      <div class="status" id="g-status">होस्ट की प्रतीक्षा…</div>
+    </div>
+
+    <div class="card">
+      <div id="ticket-print">
+        <div class="progress" id="progress">0 / 12 शब्द पूरे</div>
+        <div class="ticket" id="ticket"></div>
+      </div>
+      <p class="muted" style="text-align:center;margin:0">स्क्रीन पर आया शब्द टिकट में हो तो तुरंत उस पर टैप करें — केवल सही शब्द पर ही ✓ लगेगा।</p>
+
+      <div class="repeat-row">
+        <button class="btn small ghost" id="repeat-btn" type="button" disabled>🔁 शब्द दोबारा सुनें (1 बार)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏆 फुल हाउस का दावा (Claim)</h2>
+      <button class="btn green" id="claim-btn" type="button" disabled>🏆 Claim — पूरे 12 खंड पूरे होने पर दबाएँ</button>
+      <p class="muted">जो खिलाड़ी सबसे पहले सही क्लेम करेगा, सिस्टम उसे विजेता घोषित करेगा। होस्ट का निर्णय अंतिम होगा।</p>
+    </div>
+
+    <div class="card">
+      <h2>💬 चैट — होस्ट से सवाल पूछें</h2>
+      <div class="chat-box">
+        <div class="chat-msgs" id="chat-msgs"></div>
+        <div class="chat-input-row">
+          <input id="chat-input" type="text" placeholder="अपना सवाल लिखें..." maxlength="200">
+          <button class="btn small" id="chat-send" type="button">भेजें</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="winner" id="winner-box">🏆 फुल हाउस विजेता: <span id="winner-name"></span></div>
+
+    <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576)</div>
+  </div>
+</div>
+
+<!-- विजेता बड़ा बैनर -->
+<div class="winner-big" id="winner-big">
+  <div class="winner-big-inner">
+    <div class="trophy">🏆</div>
+    <div class="wname" id="winner-big-name"></div>
+    <div class="wsub" id="winner-big-sub">फुल हाउस विजेता</div>
+    <button class="btn" id="winner-big-close" type="button" style="margin-top:16px">🎉 बधाई दें</button>
+  </div>
+</div>
+
+<!-- गेम समाप्त स्क्रीन -->
+<div class="game-over" id="game-over">
+  <div class="game-over-inner">
+    <div class="go-icon">🎮</div>
+    <div class="go-title">गेम समाप्त</div>
+    <div class="go-winner" id="go-winner"></div>
+    <div class="go-sub" id="go-sub">होस्ट के निर्णय के अनुसार विजेता घोषित हो गया।<br>नए गेम के लिए होस्ट की प्रतीक्षा करें।</div>
+    <button class="btn ghost" id="go-close" type="button">ठीक है</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="./js/config.js"></script>
+<script src="./js/words.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/fx.js"></script>
+<script src="./js/player.js"></script>
+<script src="./js/pwa.js"></script>
+</body>
+</html>

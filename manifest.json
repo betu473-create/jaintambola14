@@ -1,0 +1,37 @@
+{
+  "name": "जैन ताम्बोला — Jain Tambola",
+  "short_name": "जैन ताम्बोला",
+  "description": "ऑनलाइन जैन ताम्बोला — होस्ट से जुड़ें, डिजिटल टिकट खेलें, शब्द हिंदी में सुनें और क्लेम करें।",
+  "lang": "hi",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff8ec",
+  "theme_color": "#e65100",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

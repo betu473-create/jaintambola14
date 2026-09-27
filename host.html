@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>होस्ट स्क्रीन — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला ऑनलाइन गेम — होस्ट स्क्रीन">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#e65100">
+<link rel="stylesheet" href="./css/style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">जैन ताम्बोला — होस्ट</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn small ghost" id="mute-btn" type="button">🔊 आवाज़ चालू</button>
+      <a href="./words.html">शब्द सूची</a>
+      <a href="./index.html">होम</a>
+    </div>
+  </div>
+
+  <!-- टाइमर -->
+  <div class="timer-bar">
+    <span class="timer" id="game-timer" style="display:none">⏱ 00:00</span>
+  </div>
+
+  <div class="announce-banner" id="announce-banner"></div>
+  <div class="status" id="net-status">कनेक्ट हो रहा है…</div>
+
+  <div class="card">
+    <h2>🔗 खिलाड़ियों को लिंक भेजें</h2>
+    <div class="roomcode" id="room-code">…</div>
+    <div class="linkbox">
+      <input id="share-link" readonly aria-label="शेयर लिंक">
+      <button class="btn small ghost" id="copy-btn" type="button">कॉपी</button>
+    </div>
+    <div class="btn-row">
+      <a class="btn small" id="wa-share" target="_blank" rel="noopener">WhatsApp पर भेजें</a>
+      <button class="btn small ghost" id="regen-btn" type="button">नया रूम बनाएँ</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👥 जुड़े हुए खिलाड़ी (<span id="player-count">0</span>)</h2>
+    <div class="players" id="players"></div>
+    <p class="muted">किसी खिलाड़ी की डिजिटल टिकट देखने के लिए उसके नाम पर दबाएँ।</p>
+  </div>
+
+  <div class="card">
+    <h2>📢 खिलाड़ियों को संदेश भेजें</h2>
+    <input class="txt" id="announce-input" placeholder="जैसे: 2 मिनट रुकें / अगला राउंड 9 बजे" maxlength="150">
+    <button class="btn" id="announce-btn" type="button">📢 संदेश भेजें</button>
+  </div>
+
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn" id="start-btn" type="button">▶️ गेम शुरू करें (टिकट भेजें)</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn green" id="next-btn" type="button" disabled>🔊 अगला शब्द निकालें</button>
+      <button class="btn ghost" id="auto-btn" type="button" disabled>⏩ ऑटो मोड शुरू</button>
+    </div>
+    <div class="btn-row">
+      <select id="auto-speed" aria-label="ऑटो मोड की रफ़्तार">
+        <option value="15000">ऑटो मोड: धीमा (15 सेकंड)</option>
+        <option value="10000" selected>ऑटो मोड: सामान्य (10 सेकंड)</option>
+        <option value="7000">ऑटो मोड: तेज़ (7 सेकंड)</option>
+      </select>
+    </div>
+    <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में 3 बार बोलकर सुनाएगा। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
+  </div>
+
+  <div class="word-card">
+    <div class="word-label">📢 अभी बोला गया शब्द</div>
+    <div id="current-shabd">…</div>
+    <div class="word-sub" id="word-sub">गेम शुरू होने की प्रतीक्षा</div>
+    <div><span class="countdown" id="countdown"></span></div>
+  </div>
+
+  <div class="winner" id="winner-box">🏆 फुल हाउस विजेता: <span id="winner-name"></span></div>
+
+  <div class="card">
+    <h2>📜 आए हुए शब्द (<span id="drawn-count">0</span> / <span id="total-count"></span>)</h2>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card">
+    <h2>💬 चैट — खिलाड़ियों के सवाल</h2>
+    <div class="chat-box">
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="जवाब लिखें..." maxlength="200">
+        <button class="btn small" id="chat-send" type="button">भेजें</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📜 गेम हिस्ट्री (आज के गेम)</h2>
+    <div id="history-list"></div>
+    <div class="btn-row">
+      <button class="btn small ghost" id="history-share" type="button">📤 शेयर करें</button>
+      <button class="btn small ghost" id="history-clear" type="button">🗑 साफ़ करें</button>
+    </div>
+    <p class="muted">हिस्ट्री कल अपने-आप डिलीट हो जाती है।</p>
+  </div>
+
+  <div class="card">
+    <h2>🏅 आज के विजेता (Leaderboard)</h2>
+    <div id="leaderboard"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎵 भक्ति संगीत (णमोकार मंत्र)</h2>
+    <div class="music-row">
+      <input type="file" id="music-file" accept="audio/*" style="display:none">
+      <button class="btn small ghost" id="music-select" type="button">📁 mp3 चुनें</button>
+      <button class="btn small ghost" id="music-play" type="button" style="display:none">▶ चलाएँ</button>
+      <button class="btn small ghost" id="music-stop" type="button" style="display:none">⏹ रोकें</button>
+    </div>
+    <p class="muted">अपना णमोकार मंत्र / स्तवन mp3 चुनें — बैकग्राउंड में धीमी आवाज़ में लूप में चलेगा।</p>
+  </div>
+
+  <div class="card">
+    <h2>➕ शब्द सूची में नया शब्द जोड़ें</h2>
+    <div class="word-add-row">
+      <input id="word-add-input" type="text" placeholder="नया शब्द लिखें..." maxlength="40">
+      <button class="btn small" id="word-add-btn" type="button">जोड़ें</button>
+    </div>
+    <div class="word-add-result" id="word-add-result"></div>
+    <p class="muted">यह शब्द इस फोन में सेव रहेगा और अगले गेम में उपयोग होगा।</p>
+    <a class="btn ghost" href="./words.html" style="margin-top:8px;width:100%">✏️ पूरी सूची में जोड़ें / हटाएँ / ठीक करें →</a>
+  </div>
+
+  <div class="card">
+    <h2>⚡ Claim रिपोर्ट</h2>
+    <div id="claims"><span class="muted">अभी कोई क्लेम नहीं आया</span></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn ghost" id="newgame-btn" type="button">🔄 नया गेम (रीसेट)</button>
+  </div>
+
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576)</div>
+  <p class="muted" style="text-align:center">॥ वंदे श्री गुरू तारणम् ॥</p>
+</div>
+
+<!-- विजेता बड़ा बैनर -->
+<div class="winner-big" id="winner-big">
+  <div class="winner-big-inner">
+    <div class="trophy">🏆</div>
+    <div class="wname" id="winner-big-name"></div>
+    <div class="wsub">फुल हाउस विजेता</div>
+    <button class="btn" id="winner-big-close" type="button" style="margin-top:16px">🎉 बधाई दें</button>
+  </div>
+</div>
+
+<!-- खिलाड़ी की टिकट मॉडल -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h2 id="modal-title" style="color:#bf360c;font-size:1.05rem;margin:0 0 12px"></h2>
+    <div class="ticket" id="modal-grid"></div>
+    <p class="muted" style="text-align:center;margin:6px 0 0">हरे (✓) = अब तक आए हुए शब्द</p>
+    <button class="btn ghost" id="modal-close" type="button">बंद करें</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="./js/config.js"></script>
+<script src="./js/words.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/fx.js"></script>
+<script src="./js/host.js"></script>
+<script src="./js/pwa.js"></script>
+</body>
+</html>
