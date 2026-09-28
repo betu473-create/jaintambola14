@@ -410,20 +410,46 @@ function updateClaimBtn(){
 }
 
 /* ==================== जुड़ना ==================== */
-function join(){
-  myName = ($('name-input').value || '').trim();
-  const code = ($('room-input').value || '').trim().toUpperCase();
-  if(!myName){ toast('कृपया अपना नाम लिखें'); return; }
-  if(!/^[A-Z0-9]{6}$/.test(code)){ toast('रूम कोड सही नहीं है (6 अक्षर/अंक)'); return; }
-  try{ localStorage.setItem('jt_name', myName); }catch(e){}
-  unlockSpeech();
-  beep(660, 0.2);
-  setPStatus('होस्ट से कनेक्ट हो रहा है…');
+let myRoomCode = '';
+let retryTimer = null, retryCount = 0;
+const RETRY_MAX = 45;   /* ~3 मिनट तक अपने-आप कोशिश */
+const RETRY_MS = 4000; /* हर 4 सेकंड में दोबारा कोशिश */
+
+function stopRetry(){
+  if(retryTimer){ clearTimeout(retryTimer); retryTimer = null; }
+}
+function scheduleRetry(){
+  if(winner || kickedOut) return;
+  if(retryTimer) return;
+  retryCount++;
+  if(retryCount > RETRY_MAX){
+    setGStatus('⚠️ होस्ट से कनेक्शन नहीं बन पाया — पेज रिफ्रेश करके उसी रूम कोड से दोबारा जुड़ें');
+    return;
+  }
+  retryTimer = setTimeout(function(){
+    retryTimer = null;
+    connectToHost();
+  }, RETRY_MS);
+}
+
+function connectToHost(){
+  stopRetry();
+  try{ if(peer) peer.destroy(); }catch(e){}
+  if(retryCount > 0){
+    setGStatus('🔄 होस्ट से दोबारा जुड़ने की कोशिश… (' + retryCount + '/' + RETRY_MAX + ') — टिकट सुरक्षित है');
+  }else{
+    setPStatus('होस्ट से कनेक्ट हो रहा है…');
+  }
   try{ peer = new Peer(); }
-  catch(e){ setPStatus('⚠️ कनेक्शन नहीं बना — इंटरनेट जाँचकर दोबारा कोशिश करें'); return; }
+  catch(e){
+    setPStatus('⚠️ कनेक्शन नहीं बना — इंटरनेट जाँचकर दोबारा कोशिश करें');
+    scheduleRetry();
+    return;
+  }
   peer.on('open', function(){
-    conn = peer.connect(ROOM_PREFIX + code, { reliable:true });
+    conn = peer.connect(ROOM_PREFIX + myRoomCode, { reliable:true });
     conn.on('open', function(){
+      retryCount = 0;
       $('join-card').style.display = 'none';
       $('game-card').style.display = 'block';
       $('p-name').textContent = '🙋 ' + myName;
@@ -432,12 +458,30 @@ function join(){
     });
     conn.on('data', onData);
     conn.on('close', function(){
-      setGStatus('⚠️ होस्ट से कनेक्शन टूटा — पेज रिफ्रेश करके उसी रूम कोड से दोबारा जुड़ें');
+      if(winner || kickedOut){ setGStatus('गेम खत्म — धन्यवाद! 🙏'); return; }
+      setGStatus('⚠️ होस्ट से कनेक्शन टूटा — अपने-आप दोबारा जुड़ने की कोशिश जारी… आपकी टिकट सुरक्षित है');
+      scheduleRetry();
     });
   });
   peer.on('error', function(e){
-    setPStatus('⚠️ कनेक्शन त्रुटि (' + ((e && e.type) || 'unknown') + ') — रूम कोड जाँचें या होस्ट से पूछें');
+    if(retryCount === 0 && (e && e.type === 'peer-unavailable')){
+      setPStatus('⚠️ यह रूम कोड अभी नहीं मिला — कोड जाँचें या होस्ट से पूछें (अपने-आप दोबारा कोशिश जारी)');
+    }
+    scheduleRetry();
   });
+}
+
+function join(){
+  myName = ($('name-input').value || '').trim();
+  const code = ($('room-input').value || '').trim().toUpperCase();
+  if(!myName){ toast('कृपया अपना नाम लिखें'); return; }
+  if(!/^[A-Z0-9]{6}$/.test(code)){ toast('रूम कोड सही नहीं है (6 अक्षर/अंक)'); return; }
+  try{ localStorage.setItem('jt_name', myName); }catch(e){}
+  unlockSpeech();
+  beep(660, 0.2);
+  myRoomCode = code;
+  retryCount = 0;
+  connectToHost();
 }
 
 /* ==================== बटन ==================== */
