@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>प्रोजेक्टर मोड — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला — बड़ी स्क्रीन / प्रोजेक्टर के लिए डिस्प्ले">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<meta name="theme-color" content="#111111">
+<link rel="stylesheet" href="./css/style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
+<style>
+html,body{background:#111;color:#fff;margin:0;padding:0}
+.sc-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;box-sizing:border-box}
+.sc-join-card{background:#1d1d1d;border:1.5px solid #444;border-radius:16px;padding:28px;max-width:440px;width:100%}
+.sc-join-card h1{font-size:1.5rem;margin:0 0 6px}
+.sc-join-card p{color:#bbb;font-size:.95rem;margin:0 0 14px}
+.sc-inp{width:100%;padding:14px;border:1.5px solid #666;border-radius:12px;font-size:1.3rem;font-weight:800;text-align:center;letter-spacing:4px;text-transform:uppercase;background:#111;color:#ffd54f;box-sizing:border-box;font-family:inherit}
+.sc-btn{margin-top:12px;width:100%;padding:14px;border:none;border-radius:12px;background:#e65100;color:#fff;font-size:1.1rem;font-weight:800;font-family:inherit;cursor:pointer}
+.sc-code{font-size:clamp(40px,10vw,120px);font-weight:900;color:#ffd54f;letter-spacing:6px;line-height:1}
+.sc-label{color:#999;font-weight:700;font-size:clamp(14px,2.5vw,24px);margin-top:6px}
+.sc-word{font-size:clamp(56px,15vw,210px);font-weight:900;color:#ffd54f;line-height:1.05;text-shadow:0 4px 24px rgba(0,0,0,.6)}
+.sc-num{font-size:clamp(18px,4.5vw,52px);color:#aaa;font-weight:800;margin-bottom:8px}
+.sc-wait{color:#8bc34a;font-weight:800;font-size:clamp(20px,4vw,44px);margin-top:10px}
+.sc-strip{position:fixed;bottom:0;left:0;right:0;display:flex;gap:8px;overflow-x:auto;padding:10px 14px;background:rgba(0,0,0,.82);backdrop-filter:blur(4px)}
+.sc-strip span{flex-shrink:0;background:#2c2c2c;color:#ffd54f;border-radius:8px;padding:6px 14px;font-weight:800;font-size:16px;white-space:nowrap}
+.sc-strip span i{font-style:normal;color:#888;margin-right:6px;font-size:.8em}
+.sc-banner{position:fixed;top:12px;left:12px;right:12px;background:#e65100;color:#fff;border-radius:12px;padding:12px 16px;font-weight:800;font-size:clamp(16px,3vw,30px);display:none;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.sc-winner{position:fixed;inset:0;background:rgba(10,10,10,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:20;text-align:center;padding:16px}
+.sc-winner .t{font-size:clamp(40px,10vw,120px);line-height:1}
+.sc-winner .n{font-size:clamp(30px,8vw,90px);font-weight:900;color:#ffd54f;margin-top:8px}
+.sc-winner .p{font-size:clamp(18px,4vw,42px);color:#8bc34a;font-weight:800;margin-top:6px}
+.sc-winner .d{color:#777;margin-top:18px;font-size:clamp(12px,2vw,18px)}
+.sc-qr{background:#fff;padding:12px;border-radius:14px;margin-top:14px;display:inline-block}
+.sc-qr svg{display:block}
+.sc-link{color:#8bc34a;font-weight:700;font-size:clamp(12px,2vw,18px);margin-top:10px;word-break:break-all}
+</style>
+</head>
+<body>
+
+<!-- जुड़ने वाला कार्ड -->
+<div class="sc-wrap" id="sc-join">
+  <div class="sc-join-card">
+    <h1>📺 प्रोजेक्टर मोड</h1>
+    <p>बड़ी स्क्रीन / प्रोजेक्टर / लैपटॉप पर खोलें और होस्ट का रूम कोड डालें</p>
+    <input class="sc-inp" id="sc-code-input" placeholder="रूम कोड (6 अक्षर)" maxlength="6" autocomplete="off">
+    <button class="sc-btn" id="sc-join-btn" type="button">जुड़ें</button>
+  </div>
+</div>
+
+<!-- डिस्प्ले -->
+<div class="sc-wrap" id="sc-display" style="display:none">
+  <div class="sc-num" id="sc-num"></div>
+  <div class="sc-word" id="sc-word" style="display:none">जैन ताम्बोला</div>
+  <div id="sc-waiting">
+    <div class="sc-code" id="sc-room">…</div>
+    <div class="sc-label">रूम कोड — इससे जुड़ें</div>
+    <div class="sc-qr" id="sc-qr"></div>
+    <div class="sc-label">फोन से स्कैन करके गेम में जुड़ें</div>
+    <div class="sc-link" id="sc-link"></div>
+    <div class="sc-wait">⏳ गेम शुरू होने की प्रतीक्षा…</div>
+  </div>
+</div>
+
+<div class="sc-banner" id="sc-banner"></div>
+
+<!-- विजेता -->
+<div class="sc-winner" id="sc-winner">
+  <div class="t">🏆</div>
+  <div class="n" id="sc-winner-name"></div>
+  <div class="p" id="sc-winner-prize"></div>
+  <div class="d">॥ जैन ताम्बोला ॥ Designed by Himanshu Jain</div>
+</div>
+
+<div class="sc-strip" id="sc-strip"></div>
+
+<script src="./js/config.js"></script>
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>if(typeof qrcode==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>');}</script>
+<script src="./js/pwa.js"></script>
+<script>
+(function(){
+  var ROOM_PREFIX = 'JT-';
+  var PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
+  var peer = null, conn = null;
+  var recent = [];
+  var bannerTimer = null, winnerTimer = null;
+  var joined = false;
+
+  function $(id){ return document.getElementById(id); }
+
+  function setBanner(msg, ms){
+    var b = $('sc-banner');
+    b.textContent = msg;
+    b.style.display = 'block';
+    if(bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function(){ b.style.display = 'none'; }, ms || 6000);
+  }
+
+  function showWord(w, num){
+    $('sc-waiting').style.display = 'none';
+    var el = $('sc-word');
+    el.style.display = 'block';
+    el.textContent = w;
+    $('sc-num').textContent = 'क्र. ' + num;
+    recent.unshift({ w: w, num: num });
+    if(recent.length > 10) recent.pop();
+    renderStrip();
+  }
+
+  function renderStrip(){
+    var strip = $('sc-strip');
+    strip.innerHTML = '';
+    recent.forEach(function(r){
+      var s = document.createElement('span');
+      var i = document.createElement('i');
+      i.textContent = r.num;
+      s.appendChild(i);
+      s.appendChild(document.createTextNode(r.w));
+      strip.appendChild(s);
+    });
+  }
+
+  function showWinner(name, prize){
+    $('sc-winner-name').textContent = name;
+    $('sc-winner-prize').textContent = '🏅 ' + (PRIZE_LABELS[prize] || 'फुल हाउस') + ' के विजेता';
+    var w = $('sc-winner');
+    w.style.display = 'flex';
+    if(winnerTimer) clearTimeout(winnerTimer);
+    winnerTimer = setTimeout(function(){ w.style.display = 'none'; }, 9000);
+  }
+
+  function resetGame(){
+    recent = [];
+    renderStrip();
+    $('sc-word').style.display = 'none';
+    $('sc-word').textContent = '';
+    $('sc-num').textContent = '';
+    $('sc-waiting').style.display = 'block';
+    $('sc-winner').style.display = 'none';
+  }
+
+  function onData(d){
+    if(!d || typeof d !== 'object') return;
+    if(d.type === 'word' && d.word){
+      var num = d.num || 0;
+      showWord(d.word, num);
+    }
+    else if(d.type === 'start'){ resetGame(); setBanner('🎮 गेम शुरू! टिकट बँट रही हैं…'); }
+    else if(d.type === 'reset'){ resetGame(); }
+    else if(d.type === 'announcement' && d.msg){ setBanner('📢 ' + d.msg, 8000); }
+    else if(d.type === 'claim-result' && d.ok && d.name){ showWinner(d.name, d.prize); }
+    else if(d.type === 'game-over' && d.winner){ showWinner(d.winner, 'full'); }
+  }
+
+  function join(){
+    if(joined) return;
+    var code = ($('sc-code-input').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if(!/^[A-Z0-9]{6}$/.test(code)){ alert('रूम कोड सही नहीं है (6 अक्षर/अंक) — होस्ट से पूछें'); return; }
+    joined = true;
+    $('sc-join').style.display = 'none';
+    $('sc-display').style.display = 'flex';
+    $('sc-room').textContent = code;
+    var link = (window.jtSiteUrl ? jtSiteUrl() : location.origin) + '/join.html?room=' + code;
+    $('sc-link').textContent = link;
+    try{
+      var qr = qrcode(0, 'M');
+      qr.addData(link);
+      qr.make();
+      $('sc-qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 });
+    }catch(e){ $('sc-qr').innerHTML = ''; }
+    try{
+      peer = new Peer();
+    }catch(e){
+      alert('कनेक्शन नहीं बना — इंटरनेट जाँचकर पेज रिफ्रेश करें');
+      return;
+    }
+    peer.on('open', function(){
+      conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
+      conn.on('open', function(){
+        try{ conn.send({ type:'join', name:'📺 प्रोजेक्टर', screen:true, deviceId:'SCREEN-' + code }); }catch(e){}
+      });
+      conn.on('data', onData);
+      conn.on('close', function(){ setBanner('⚠️ होस्ट से कनेक्शन टूटा — पेज रिफ्रेश करें', 60000); });
+    });
+    peer.on('error', function(){ alert('कनेक्शन त्रुटि — रूम कोड जाँचें और पेज रिफ्रेश करें'); });
+  }
+
+  $('sc-join-btn').addEventListener('click', join);
+  $('sc-code-input').addEventListener('keydown', function(e){ if(e.key === 'Enter') join(); });
+
+  var urlRoom = (new URLSearchParams(location.search).get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if(urlRoom){
+    $('sc-code-input').value = urlRoom;
+    setTimeout(join, 300);
+  }
+
+  /* शब्द का क्रमांक निकालने के लिए (words.js लोड नहीं है तो 0) */
+  function shabdNumber(w){
+    try{ return window.shabdNumber ? window.shabdNumber(w) : 0; }catch(e){ return 0; }
+  }
+})();
+</script>
+</body>
+</html>
