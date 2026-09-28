@@ -25,6 +25,7 @@
       <button class="btn small ghost" id="mute-btn" type="button">🔊 आवाज़ चालू</button>
       <a href="./words.html">शब्द सूची</a>
       <a href="./print.html">🖨 प्रिंट</a>
+      <a href="screen.html" id="screen-link">📺 प्रोजेक्टर</a>
       <a href="./index.html">होम</a>
     </div>
   </div>
@@ -48,6 +49,7 @@
       <a class="btn small" id="wa-share" target="_blank" rel="noopener">WhatsApp पर भेजें</a>
       <button class="btn small ghost" id="regen-btn" type="button">नया रूम बनाएँ</button>
     </div>
+    <div id="qr-box" style="background:#fff;border:1.5px solid #ffe0b2;border-radius:14px;padding:12px;margin-top:12px;text-align:center"></div>
   </div>
 
   <div class="card">
@@ -133,6 +135,15 @@
 
   <div class="card">
     <h2>⚡ Claim रिपोर्ट</h2>
+    <div id="winner-photo-card" style="display:none;background:#fff8ef;border:1.5px solid #ffe0b2;border-radius:12px;padding:12px;margin:8px 0;text-align:center">
+      <div style="font-weight:800;color:#4e342e">📸 विजेता: <span id="wp-name"></span></div>
+      <div class="btn-row" style="margin-top:8px;justify-content:center">
+        <button class="btn small" id="wp-take" type="button">📷 फोटो लें</button>
+        <button class="btn small ghost" id="wp-share" type="button" style="display:none;border-color:#2e7d32;color:#2e7d32">📤 शेयर करें</button>
+      </div>
+      <img id="wp-img" alt="विजेता की फोटो" style="max-width:100%;border-radius:10px;margin-top:8px;display:none">
+      <input type="file" id="wp-file" accept="image/*" capture="environment" style="display:none">
+    </div>
     <div id="claims"><span class="muted">अभी कोई क्लेम नहीं आया</span></div>
   </div>
 
@@ -178,6 +189,8 @@
 <script src="./js/words.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/voice.js"></script>
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>if(typeof qrcode==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>');}</script>
 <script src="./js/fx.js"></script>
 <script src="./js/host.js"></script>
 <script src="./js/pwa.js"></script>
