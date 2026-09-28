@@ -10,6 +10,10 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <meta name="theme-color" content="#e65100">
 <link rel="stylesheet" href="./css/style.css">
+<style>
+.prize-opt{display:block;padding:9px 10px;border:1.5px solid #ffe0b2;border-radius:10px;margin:6px 0;font-weight:700;color:#4e342e;cursor:pointer}
+.prize-opt input{width:18px;height:18px;vertical-align:-3px;margin-right:6px;accent-color:#e65100}
+</style>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
 </head>
@@ -20,6 +24,7 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn small ghost" id="mute-btn" type="button">🔊 आवाज़ चालू</button>
       <a href="./words.html">शब्द सूची</a>
+      <a href="./print.html">🖨 प्रिंट</a>
       <a href="./index.html">होम</a>
     </div>
   </div>
@@ -131,6 +136,15 @@
     <div id="claims"><span class="muted">अभी कोई क्लेम नहीं आया</span></div>
   </div>
 
+  <div class="card">
+    <h2>🏆 प्राइज़ सेटिंग्स (Custom)</h2>
+    <label class="prize-opt"><input type="checkbox" id="pr-jp"> 🥇 जल्दी पाँच — पहले 5 शब्द पूरे होने पर</label>
+    <label class="prize-opt"><input type="checkbox" id="pr-corner"> 🔶 चार कोन — टिकट के 4 कोनों वाले शब्द पूरे होने पर</label>
+    <label class="prize-opt"><input type="checkbox" id="pr-line"> 📏 लाइन — कोई भी एक पूरी पंक्ति (4 शब्द) पूरी होने पर</label>
+    <p class="muted">🏆 फुल हाउस हमेशा चालू रहता है। टिक हटाकर सिर्फ फुल हाउस भी खेल सकते हैं (पहले जैसा)। बदलाव तुरंत सेव होता है।</p>
+    <div id="prize-winners" style="font-size:.92rem;line-height:1.8;font-weight:700;color:#3e2723"></div>
+  </div>
+
   <div class="btn-row">
     <button class="btn ghost" id="newgame-btn" type="button">🔄 नया गेम (रीसेट)</button>
   </div>
@@ -163,6 +177,7 @@
 <script src="./js/config.js"></script>
 <script src="./js/words.js"></script>
 <script src="./js/audio.js"></script>
+<script src="./js/voice.js"></script>
 <script src="./js/fx.js"></script>
 <script src="./js/host.js"></script>
 <script src="./js/pwa.js"></script>
