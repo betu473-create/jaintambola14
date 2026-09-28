@@ -149,7 +149,7 @@ function sendAnnouncement(){
   const b = $('announce-banner');
   b.textContent = '📢 ' + msg;
   b.classList.add('show');
-  toast('संदेश सब खिलाड़ियों को भेज दिया गया ✅');
+  toast('संदेश सब खिलाड़ियों को भेज दया गया ✅');
 }
 $('announce-btn').addEventListener('click', sendAnnouncement);
 
@@ -292,7 +292,7 @@ if(__jtAddBtn) __jtAddBtn.addEventListener('click', function(){
     localStorage.setItem('jt_extra_words', JSON.stringify(extra));
   }catch(e){}
   $('total-count').textContent = SHABD_LIST.length;
-  toast('शब्द जोड़ दिया गया ✅');
+  toast('शब्द जोड़ दया गया ✅');
 });
 /* सेव किए हुए अतिरिक्त शब्द लोड करो */
 (function(){
@@ -484,6 +484,11 @@ function handleData(conn, d){
     try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
   } else if(d.type === 'claim'){
     handleClaim(conn, d);
+  } else if(d.type === 'winner-selfie' && d.img && d.name){
+    /* विजेता के फोन से फोटो आई — सबको दिखाओ (v5.6) */
+    const wlabel = PRIZE_LABELS[d.prize] || 'फुल हाउस';
+    showWinnerPhotoOnHost(d.name, wlabel, d.img);
+    broadcast({ type:'winner-photo', name:d.name, prize:d.prize, label:wlabel, img:d.img });
   } else if(d.type === 'chat' && d.msg){
     const nm = players[conn.peer] ? players[conn.peer].name : 'खिलाड़ी';
     addChatMsg(nm, String(d.msg).slice(0, 200), '');
@@ -654,9 +659,9 @@ function rejectClaim(){
   const row = document.createElement('div');
   row.className = 'claim-row';
   row.style.borderLeftColor = '#e53935';
-  row.textContent = '❌ नामंज़ूर — ' + name + ' का क्लेम होस्ट ने ठुकरा दिया (' + new Date().toLocaleTimeString('hi-IN') + ')';
+  row.textContent = '❌ नामंज़ूर — ' + name + ' का क्लेम होस्ट ने ठुकरा दया (' + new Date().toLocaleTimeString('hi-IN') + ')';
   $('claims').prepend(row);
-  setStatus('❌ ' + name + ' का क्लेम नामंज़ूर किया गया। गेम जारी रहेगा।');
+  setStatus('❌ ' + name + ' का क्लेम नामंज़ूर कया गया। गेम जारी रहेगा।');
   toast('क्लेम नामंज़ूर — गेम जारी');
 }
 
@@ -766,7 +771,7 @@ $('start-btn').addEventListener('click', function(){
   $('next-btn').disabled = false;
   $('auto-btn').disabled = false;
   startTimer();
-  setStatus('✅ गेम शुरू — सबको डिजिटल टिकट भेज दिए गए। अब शब्द निकालें।');
+  setStatus('✅ गेम शुरू — सबको डिजिटल टिकट भेज दए गए। अब शब्द निकालें।');
 });
 $('next-btn').addEventListener('click', function(){
   drawWord();
@@ -812,6 +817,25 @@ $('modal-bg').addEventListener('click', function(e){
 
 /* ==================== विजेता फोटो (v5.6) ==================== */
 let wpFile = null;
+function showWinnerPhotoOnHost(name, label, dataUrl){
+  const card = $('winner-photo-card');
+  if(!card) return;
+  $('wp-name').textContent = name + ' (' + label + ')';
+  $('wp-img').src = dataUrl;
+  $('wp-img').style.display = 'block';
+  $('wp-share').style.display = 'inline-block';
+  card.dataset.name = name;
+  card.dataset.label = label;
+  card.style.display = 'block';
+  const p = $('claims-panel');
+  if(p) p.open = true;
+  try{
+    fetch(dataUrl).then(function(r){ return r.blob(); }).then(function(blob){
+      wpFile = new File([blob], 'winner.jpg', { type:'image/jpeg' });
+    }).catch(function(){});
+  }catch(e){}
+  toast('📸 ' + name + ' की फोटो आ गई — सबकी स्क्रीन पर दिख रही है');
+}
 function offerWinnerPhoto(name, label){
   const card = $('winner-photo-card');
   if(!card) return;
@@ -855,7 +879,14 @@ $('wp-file').addEventListener('change', function(e){
       $('wp-img').src = URL.createObjectURL(blob);
       $('wp-img').style.display = 'block';
       $('wp-share').style.display = 'inline-block';
-      toast('📸 फोटो तैयार — शेयर करें बटन दबाएँ');
+      toast('📸 फोटो तैयार — सबको भेज दी गई');
+      try{
+        const rd = new FileReader();
+        rd.onload = function(){
+          try{ broadcast({ type:'winner-photo', name:name, prize:'full', label:label, img:rd.result }); }catch(e2){}
+        };
+        rd.readAsDataURL(blob);
+      }catch(e2){}
     }, 'image/jpeg', 0.9);
   };
   img.onerror = function(){ toast('⚠️ यह फोटो नहीं खुली — दोबारा कोशिश करें'); };
