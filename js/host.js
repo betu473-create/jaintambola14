@@ -307,7 +307,7 @@ if(__jtAddBtn) __jtAddBtn.addEventListener('click', function(){
 /* ==================== खिलाड़ी सूची ==================== */
 function renderPlayers(){
   const box = $('players');
-  const ids = Object.keys(players);
+  const ids = Object.keys(players).filter(function(id){ return !players[id].screen; });
   $('player-count').textContent = ids.length;
   box.innerHTML = '';
   if(!ids.length){
@@ -326,6 +326,15 @@ function renderPlayers(){
     b.addEventListener('click', function(){ showTicketModal(id); });
     box.appendChild(b);
   });
+  if(Object.keys(players).some(function(id){ return players[id].screen; })){
+    const sp = document.createElement('span');
+    sp.className = 'player-pill';
+    sp.style.background = '#37474f';
+    sp.style.color = '#fff';
+    sp.style.cursor = 'default';
+    sp.textContent = '📺 प्रोजेक्टर जुड़ा है';
+    box.appendChild(sp);
+  }
 }
 function renderChips(){
   const box = $('chips');
@@ -372,7 +381,7 @@ function drawWord(){
     if(window.jtVoice){ jtVoice.sayWord(w); } else { speakWord(w); }
   }
   showWord(w);
-  broadcast({ type:'word', word:w });
+  broadcast({ type:'word', word:w, num: shabdNumber(w) });
   renderChips();
   $('drawn-count').textContent = drawn.length;
   if(!deck.length){
@@ -431,6 +440,13 @@ function sendTicketTo(conn){
 function handleData(conn, d){
   if(!d || typeof d !== 'object') return;
   if(d.type === 'join' && d.name){
+    if(d.screen){
+      players[conn.peer] = { name:'📺 प्रोजेक्टर स्क्रीन', screen:true, deviceId:String(d.deviceId || '') };
+      renderPlayers();
+      try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
+      toast('📺 प्रोजेक्टर स्क्रीन जुड़ गई');
+      return;
+    }
     const devId = String(d.deviceId || '');
     /* रीकनेक्ट: पहले से इस डिवाइस का टिकट बना है तो वही भेजो */
     let existingTicket = null;
@@ -598,6 +614,7 @@ function approveClaim(){
     setStatus('🏅 ' + label + ' विजेता: ' + name + ' — गेम जारी रहेगा');
     toast('🏅 ' + label + ': ' + name);
     beep(1150, 0.3);
+    offerWinnerPhoto(name, label);
     return;
   }
   winnerFull = name;
@@ -623,6 +640,7 @@ function approveClaim(){
   beep(1200, 0.5);
   setStatus('🏆 फुल हाउस विजेता (होस्ट द्वारा मंज़ूर): ' + name + ' । होस्ट का निर्णय अंतिम।');
   stopTimer();
+  offerWinnerPhoto(name, 'फुल हाउस');
 }
 
 function rejectClaim(){
@@ -674,6 +692,14 @@ function createRoom(code){
   $('share-link').value = link;
   $('wa-share').href = 'https://wa.me/?text=' +
     encodeURIComponent('॥ जैन ताम्बोला ॥ गेम में शामिल हों:\n' + link + '\nरूम कोड: ' + code);
+  $('screen-link').href = 'screen.html?room=' + code;
+  try{
+    const qr = qrcode(0, 'M');
+    qr.addData(link);
+    qr.make();
+    $('qr-box').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 }) +
+      '<div class="muted" style="font-size:.8rem;margin-top:6px">📱 फोन से स्कैन करके सीधे गेम में जुड़ें</div>';
+  }catch(e){ $('qr-box').innerHTML = ''; }
   setStatus('रूम बन रहा है…');
   try{
     peer = new Peer(ROOM_PREFIX + code);
@@ -780,6 +806,78 @@ $('mute-btn').addEventListener('click', function(){
 $('modal-close').addEventListener('click', function(){ $('modal-bg').classList.remove('show'); });
 $('modal-bg').addEventListener('click', function(e){
   if(e.target === $('modal-bg')) $('modal-bg').classList.remove('show');
+});
+
+/* ==================== विजेता फोटो (v5.6) ==================== */
+let wpFile = null;
+function offerWinnerPhoto(name, label){
+  const card = $('winner-photo-card');
+  if(!card) return;
+  $('wp-name').textContent = name + ' (' + label + ')';
+  $('wp-img').style.display = 'none';
+  $('wp-img').removeAttribute('src');
+  $('wp-share').style.display = 'none';
+  wpFile = null;
+  card.dataset.name = name;
+  card.dataset.label = label;
+  card.style.display = 'block';
+}
+$('wp-take').addEventListener('click', function(){ $('wp-file').click(); });
+$('wp-file').addEventListener('change', function(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const name = $('winner-photo-card').dataset.name || '';
+  const label = $('winner-photo-card').dataset.label || '';
+  const img = new Image();
+  img.onload = function(){
+    const W = 800;
+    const H = Math.max(1, Math.round(img.height * W / img.width));
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H + 100;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff';
+    x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(img, 0, 0, W, H);
+    x.fillStyle = '#b71c1c';
+    x.fillRect(0, H, W, 100);
+    x.fillStyle = '#fff';
+    x.font = 'bold 38px sans-serif';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText('🏆 ' + name + ' — ' + label, W / 2, H + 50);
+    URL.revokeObjectURL(img.src);
+    c.toBlob(function(blob){
+      if(!blob){ toast('⚠️ फोटो बन नहीं पाई'); return; }
+      wpFile = new File([blob], 'winner.jpg', { type:'image/jpeg' });
+      $('wp-img').src = URL.createObjectURL(blob);
+      $('wp-img').style.display = 'block';
+      $('wp-share').style.display = 'inline-block';
+      toast('📸 फोटो तैयार — शेयर करें बटन दबाएँ');
+    }, 'image/jpeg', 0.9);
+  };
+  img.onerror = function(){ toast('⚠️ यह फोटो नहीं खुली — दोबारा कोशिश करें'); };
+  img.src = URL.createObjectURL(f);
+  e.target.value = '';
+});
+$('wp-share').addEventListener('click', function(){
+  if(!wpFile){ toast('पहले 📷 से फोटो लें'); return; }
+  const name = $('winner-photo-card').dataset.name || '';
+  const label = $('winner-photo-card').dataset.label || '';
+  const txt = '🏆 ' + name + ' — ' + label + ' विजेता! ॥ जैन ताम्बोला ॥';
+  if(navigator.canShare && navigator.canShare({ files: [wpFile] })){
+    navigator.share({ files: [wpFile], text: txt }).catch(function(){});
+  }else{
+    try{
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(wpFile);
+      a.download = 'winner.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('फोटो डाउनलोड हुई — WhatsApp पर भेज दें');
+    }catch(err){ toast('शेयर नहीं हो पाया'); }
+  }
 });
 
 /* ==================== शुरुआत ==================== */
