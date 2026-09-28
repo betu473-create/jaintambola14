@@ -2,7 +2,8 @@
    जैन ताम्बोला — होस्ट स्क्रीन लॉजिक v8
    फीचर्स: टाइमर, एनाउंसमेंट, चैट, हिस्ट्री, लीडरबोर्ड,
    म्यूज़िक, शब्द जोड़ना, प्राइज़ राउंड (जल्दी पाँच/कोन/लाइन),
-   असली आवाज़ (voice pack), फुल हाउस, होस्ट रिकनेक्ट (पुराना गेम वापस)
+   असली आवाज़ (voice pack), फुल हाउस, होस्ट रिकनेक्ट (पुराना गेम वापस),
+   तेज़ गेम (गेम-शब्द पूल: 60/90/150/सभी)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -18,6 +19,7 @@ let muted = false;
 let gameStartTime = null, timerInterval = null;
 let musicAudio = null;
 let lastWord = null;
+let gamePool = [];   /* इस गेम के लिए चुने गए शब्द — डेक और टिकट दोनों यहीं से बनते हैं (v5.6.2) */
 
 /* ==================== प्राइज़ सेटिंग्स (v5.6) ==================== */
 const PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
@@ -120,6 +122,7 @@ function saveHostState(){
       room: $('room-code').textContent,
       started: started,
       deck: deck,
+      pool: gamePool,
       drawn: drawn,
       prizeWinners: prizeWinners,
       gameStartMs: gameStartTime,
@@ -145,6 +148,8 @@ function restoreHostState(){
   started = true;
   winnerFull = null;
   deck = s.deck;
+  gamePool = (Array.isArray(s.pool) && s.pool.length) ? s.pool :
+    (Array.isArray(s.deck) && Array.isArray(s.drawn) ? s.deck.concat(s.drawn) : []);
   drawn = s.drawn;
   drawnSet.clear();
   drawn.forEach(function(w){ drawnSet.add(w); });
@@ -171,7 +176,7 @@ function restoreHostState(){
     const num = shabdNumber(lastWord);
     el.innerHTML = '<span style="font-size:.45em;opacity:.7;display:block;margin-bottom:4px">क्र. ' + num + '</span>' + lastWord;
     el.classList.add('pop');
-    $('word-sub').textContent = 'शब्द ' + drawn.length + ' / ' + SHABD_LIST.length + ' (वापस लाया गया)';
+    $('word-sub').textContent = 'शब्द ' + drawn.length + ' / ' + (gamePool.length || SHABD_LIST.length) + ' (वापस लाया गया)';
   }
   $('next-btn').disabled = !deck.length;
   $('auto-btn').disabled = !deck.length;
@@ -445,7 +450,7 @@ function showWord(word){
   const num = shabdNumber(word);
   el.innerHTML = '<span style="font-size:.45em;opacity:.7;display:block;margin-bottom:4px">क्र. ' + num + '</span>' + word;
   el.classList.add('pop');
-  $('word-sub').textContent = 'शब्द ' + drawn.length + ' / ' + SHABD_LIST.length +
+  $('word-sub').textContent = 'शब्द ' + drawn.length + ' / ' + (gamePool.length || SHABD_LIST.length) +
     ' • ऐप इसे हिंदी में ' + JT_CONFIG.SPEAK_TIMES + ' बार बोलेगा';
 }
 
@@ -467,7 +472,7 @@ function drawWord(){
   saveHostState();
   if(!deck.length){
     stopAuto();
-    setStatus('सभी ' + SHABD_LIST.length + ' शब्द आ चुके — क्लेम की प्रतीक्षा…');
+    setStatus('सभी ' + (gamePool.length || SHABD_LIST.length) + ' शब्द आ चुके — क्लेम की प्रतीक्षा…');
   }
 }
 
@@ -508,7 +513,8 @@ function stopAuto(){
 
 /* ==================== गेम फ्लो ==================== */
 function makeTicket(){
-  return shuffle(SHABD_LIST.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
+  const src = (gamePool && gamePool.length) ? gamePool : SHABD_LIST;
+  return shuffle(src.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
 }
 function sendTicketTo(conn){
   const words = makeTicket();
@@ -852,7 +858,13 @@ $('start-btn').addEventListener('click', function(){
   winnerFull = null;
   prizeWinners = {};
   renderPrizeWinners();
-  deck = shuffle(SHABD_LIST.slice());
+  /* गेम के शब्द चुनो: 60/90/150 या पूरी सूची (v5.6.2) */
+  let gw = 0;
+  try{ gw = parseInt(($('game-words') && $('game-words').value) || '90', 10) || 0; }catch(e){ gw = 0; }
+  try{ localStorage.setItem('jt_gamewords', String(gw)); }catch(e){}
+  const poolAll = SHABD_LIST.slice();
+  gamePool = (gw > 0 && gw < poolAll.length) ? shuffle(poolAll).slice(0, gw) : poolAll;
+  deck = shuffle(gamePool.slice());
   drawn = []; drawnSet.clear();
   resetBoard();
   broadcast({ type:'start' });
@@ -863,7 +875,7 @@ $('start-btn').addEventListener('click', function(){
   startTimer();
   saveHostState();
   $('resume-banner').style.display = 'none';
-  setStatus('✅ गेम शुरू — सबको डिजिटल टिकट भेज दए गए। अब शब्द निकालें।');
+  setStatus('✅ गेम शुरू — ' + gamePool.length + ' शब्दों में से गेम चलेगा। सबको डिजिटल टिकट भेज दए गए। अब शब्द निकालें।');
 });
 $('next-btn').addEventListener('click', function(){
   drawWord();
@@ -1172,6 +1184,11 @@ $('total-count').textContent = SHABD_LIST.length;
 renderHistory();
 renderLeaderboard();
 createRoom(makeRoomCode());
+/* पिछली बार की गेम-शब्द पसंद याद रखो (v5.6.2) */
+try{
+  const sgw = localStorage.getItem('jt_gamewords');
+  if(sgw !== null && $('game-words')) $('game-words').value = sgw;
+}catch(e){}
 /* पुराना अधूरा गेम मिले तो बैनर दिखाओ */
 (function(){
   const s = readHostState();
