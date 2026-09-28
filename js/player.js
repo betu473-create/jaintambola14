@@ -1,7 +1,7 @@
 /* ============================================================
    जैन ताम्बोला — खिलाड़ी स्क्रीन लॉजिक v8
    फीचर्स: चैट, रिपीट(1बार), एनाउंसमेंट, विजेता सेलिब्रेशन,
-   प्राइज़ राउंड (जल्दी पाँच / चार कोन / लाइन / फुल हाउस)
+   प्राइज़ राउंड (जल्दी पाँच / चार कोन / फुल हाउस)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -186,6 +186,8 @@ function resetLocal(){
   $('winner-box').classList.remove('show');
   $('winner-big').classList.remove('show');
   $('game-over').classList.remove('show');
+  $('selfie-card').style.display = 'none';
+  $('photo-big').classList.remove('show');
   updateProgress();
   setGStatus('गेम रीसेट हुआ — नए गेम की प्रतीक्षा…');
 }
@@ -251,8 +253,9 @@ function onData(d){
     $('claim-btn').textContent = '🚫 गेम से बाहर';
     kickedOut = true;
     setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खेल सकते हैं।');
-    toast('🚫 आप इस गेम से बाहर कर दिए गए हैं');
+    toast('🚫 आप इस गेम से बाहर कर दए गए हैं');
   }
+  else if(d.type === 'winner-photo'){ showWinnerPhoto(d); }
   else if(d.type === 'claim-result'){ onClaimResult(d); }
 }
 
@@ -267,6 +270,7 @@ function onClaimResult(d){
       if(!muted) beep(1150, 0.4);
       toast('🏅 बधाई! आपने ' + (PRIZE_LABELS[d.prize] || '') + ' जीता!');
       setGStatus('🏅 आपने ' + (PRIZE_LABELS[d.prize] || '') + ' जीता! गेम जारी — अगले प्राइज़ की प्रतीक्षा…');
+      showSelfieCard(d.prize);
     }else{
       toast('🏅 ' + (PRIZE_LABELS[d.prize] || '') + ' विजेता: ' + d.name);
       setGStatus('🏅 ' + (PRIZE_LABELS[d.prize] || '') + ' विजेता: ' + d.name + ' — गेम जारी');
@@ -278,6 +282,7 @@ function onClaimResult(d){
     $('claim-btn').disabled = true;
     $('winner-name').textContent = d.name;
     $('winner-box').classList.add('show');
+    if(d.name === myName) showSelfieCard('full');
     /* बड़ा विजेता बैनर */
     $('winner-big-name').textContent = d.name;
     $('winner-big-sub').textContent = (d.name === myName) ? '🏆 बधाई हो! आप विजेता हैं! 🏆' : 'फुल हाउस विजेता';
@@ -310,7 +315,7 @@ function onClaimResult(d){
       $('claim-btn').disabled = true;
       $('claim-btn').textContent = '🚫 3 गलत क्लेम — गेम से बाहर';
       kickedOut = true;
-      setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खे�ल सकते हैं।');
+      setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खेल सकते हैं।');
       toast('🚫 3 गलत क्लेम — आप इस गेम से बाहर हैं');
       try{ conn.send({ type:'kick', reason:'3 गलत क्लेम' }); }catch(e){}
       return;
@@ -319,6 +324,59 @@ function onClaimResult(d){
     updateClaimBtn();
   }
 }
+/* ==================== विजेता सेल्फ़ी + फोटो (v5.6) ==================== */
+function showSelfieCard(prize){
+  const c = $('selfie-card');
+  if(!c) return;
+  c.dataset.prize = prize || 'full';
+  c.style.display = 'block';
+  try{ c.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+  if(!muted) beep(1320, 0.2);
+  toast('📸 आपकी फोटो सबकी स्क्रीन पर दिखेगी — नीचे बटन दबाएँ');
+}
+$('selfie-take').addEventListener('click', function(){ $('selfie-file').click(); });
+$('selfie-file').addEventListener('change', function(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const prize = $('selfie-card').dataset.prize || 'full';
+  const label = PRIZE_LABELS[prize] || 'फुल हाउस';
+  const img = new Image();
+  img.onload = function(){
+    const W = 720;
+    const H = Math.max(1, Math.round(img.height * W / img.width));
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H + 96;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff';
+    x.fillRect(0, 0, W, c.height);
+    x.drawImage(img, 0, 0, W, H);
+    x.fillStyle = '#b71c1c';
+    x.fillRect(0, H, W, 96);
+    x.fillStyle = '#fff';
+    x.font = 'bold 40px sans-serif';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText('🏆 ' + myName + ' — ' + label, W / 2, H + 48);
+    URL.revokeObjectURL(img.src);
+    const data = c.toDataURL('image/jpeg', 0.75);
+    try{ conn.send({ type:'winner-selfie', name:myName, prize:prize, img:data }); }catch(err){}
+    $('selfie-card').style.display = 'none';
+    toast('📸 फोटो भेज दी गई — अब सबकी स्क्रीन पर दिखेगी!');
+  };
+  img.onerror = function(){ toast('⚠️ फोटो नहीं खुली — दोबारा कोशिश करें'); };
+  img.src = URL.createObjectURL(f);
+  e.target.value = '';
+});
+function showWinnerPhoto(d){
+  if(!d || !d.img || !d.name) return;
+  $('photo-big-name').textContent = d.name;
+  $('photo-big-sub').textContent = (d.label || PRIZE_LABELS[d.prize] || 'फुल हाउस') + ' के विजेता — बधाई हो! 🎉' + (d.name === myName ? ' (आप!)' : '');
+  $('photo-big-img').src = d.img;
+  $('photo-big').classList.add('show');
+  if(!muted) beep(1150, 0.4);
+}
+$('photo-big-close').addEventListener('click', function(){ $('photo-big').classList.remove('show'); });
 $('winner-big-close').addEventListener('click', function(){ $('winner-big').classList.remove('show'); });
 $('go-close').addEventListener('click', function(){ $('game-over').classList.remove('show'); });
 

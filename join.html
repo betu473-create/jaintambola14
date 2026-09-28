@@ -65,6 +65,14 @@
       <p class="muted">प्राइज़ पूरा होते ही यह बटन खुद चालू हो जाएगा (जल्दी पाँच / चार कोन / लाइन / फुल हाउस — होस्ट की प्राइज़ सेटिंग अनुसार)। सबसे पहले सही क्लेम करने वाला विजेता। होस्ट का निर्णय अंतिम।</p>
     </div>
 
+    <!-- विजेता सेल्फ़ी (v5.6) -->
+    <div class="card" id="selfie-card" style="display:none;background:#fff8ef;border:2px solid #2e7d32">
+      <h2>📸 आप विजेता हैं — बहुत बहुत बधाई हो! 🎉</h2>
+      <p style="margin:0 0 10px">आपकी एक फोटो ली जाएगी जो <b>सबकी स्क्रीन पर</b> दिखेगी। नीचे दबाकर कैमरा खोलें।</p>
+      <button class="btn" id="selfie-take" type="button">📷 फोटो लें (कैमरा)</button>
+      <input type="file" id="selfie-file" accept="image/*" capture="user" style="display:none">
+    </div>
+
     <div class="card">
       <h2>💬 चैट — होस्ट से सवाल पूछें</h2>
       <div class="chat-box">
@@ -89,6 +97,17 @@
     <div class="wname" id="winner-big-name"></div>
     <div class="wsub" id="winner-big-sub">फुल हाउस विजेता</div>
     <button class="btn" id="winner-big-close" type="button" style="margin-top:16px">🎉 बधाई दें</button>
+  </div>
+</div>
+
+<!-- विजेता की फोटो — सबकी स्क्रीन पर -->
+<div class="winner-big" id="photo-big">
+  <div class="winner-big-inner">
+    <div class="trophy">🏆</div>
+    <div class="wname" id="photo-big-name"></div>
+    <img id="photo-big-img" alt="विजेता की फोटो" style="max-width:94%;max-height:52vh;border-radius:14px;border:4px solid #fff;object-fit:cover;box-shadow:0 8px 30px rgba(0,0,0,.35)">
+    <div class="wsub" id="photo-big-sub"></div>
+    <button class="btn" id="photo-big-close" type="button" style="margin-top:12px">🎉 बधाई दें</button>
   </div>
 </div>
 
