@@ -4,9 +4,11 @@
    फिक्स 1: Web Speech API से हर शब्द हिंदी (hi-IN) में
            एक बार साफ़-साफ़ बोला जाता है।
    फिक्स 2: मोबाइल ब्राउज़र पर बिना टैप के आवाज़ नहीं बजती —
-           इसलिए "आवाज़ अनलॉक" जोड़ा गया है। जब यूज़र कोई
-           बटन दबाता है (जुड़ें / टेस्ट), आवाज़ इंजन अनलॉक
-           हो जाता है और फिर होस्ट से आने वाले शब्द बोलते हैं।
+           इसलिए "आवाज़ अनलॉक" जोड़ा गया है।
+   फिक्स 3 (v5.6.1): कुछ शब्द अटकते थे — अब (a) keep-alive
+           सिर्फ resume करता है (pause हटाया — वही आवाज़ काट
+           रहा था), (b) शब्द बीच में छूटने पर ऐप खुद एक बार
+           दोबारा बोलती है।
    ============================================================ */
 let _hiVoice = null;
 let _speechUnlocked = false;
@@ -43,30 +45,39 @@ function unlockSpeech(){
   }catch(e){}
 }
 
-/* मोबाइल बग: कुछ फोन पर speechSynthesis रुक जाता है — रिज़्यूम ट्रिक */
+/* मोबाइल बग: speechSynthesis जम जाता है — हल्का रिज़्यूम
+   (पुराना pause+resume बोलती आवाज़ को काट रहा था, इसलिए
+   अब सिर्फ resume) */
 if('speechSynthesis' in window){
   setInterval(function(){
     try{
-      if(window.speechSynthesis.speaking){
-        window.speechSynthesis.pause();
+      if(window.speechSynthesis.speaking || window.speechSynthesis.pending){
         window.speechSynthesis.resume();
       }
     }catch(e){}
   }, 5000);
 }
 
-/* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है */
-function speakWord(word, times){
+/* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है।
+   अगर इंजन शब्द बीच में छोड़ दे तो एक बार दोबारा कोशिश करता है। */
+function speakWord(word, times, _isRetry){
   if(!('speechSynthesis' in window)) return;
   const n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
   try{ window.speechSynthesis.cancel(); }catch(e){}
   for(let i = 0; i < n; i++){
-    const u = new SpeechSynthesisUtterance(String(word));
+    const u = new SpeechSynthesisUtterance(String(word || '').trim());
     u.lang   = (window.JT_CONFIG && JT_CONFIG.SPEAK_LANG) || 'hi-IN';
-    u.rate   = (window.JT_CONFIG && JT_CONFIG.SPEAK_RATE) || 0.85;
+    u.rate   = (window.JT_CONFIG && JT_CONFIG.SPEAK_RATE) || 0.9;
     u.pitch  = 1;
     u.volume = 1;
     if(_hiVoice) u.voice = _hiVoice;
+    /* शब्द अटक/छूट जाए तो एक बार दोबारा — लेकिन रुकावट-वाले
+       cancel को ग़लती न समझें */
+    u.onerror = function(ev){
+      if(_isRetry) return;
+      if(ev && (ev.error === 'interrupted' || ev.error === 'canceled')) return;
+      setTimeout(function(){ speakWord(word, 1, true); }, 450);
+    };
     window.speechSynthesis.speak(u);
   }
 }
