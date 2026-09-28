@@ -86,6 +86,41 @@ function stopSpeaking(){
   try{ window.speechSynthesis.cancel(); }catch(e){}
 }
 
+/* ==================== नंबर + शब्द बोलना (v5.6.3) ==================== */
+/* संख्या को हिंदी शब्दों में बदलो (जैसे 15 → 'पंद्रह') — TTS के लिए */
+function hindiNumberWords(n){
+  n = parseInt(n, 10);
+  if(!n || n < 1 || n > 999) return '';
+  const ek = ['','एक','दो','तीन','चार','पाँच','छह','सात','आठ','नौ','दस','ग्यारह','बारह','तेरह','चौदह','पंद्रह','सोलह','सत्रह','अठारह','उन्नीस','बीस','इक्कीस','बाईस','तेईस','चौबीस','पच्चीस','छब्बीस','सत्ताईस','अट्ठाईस','उनतीस','तीस','इकतीस','बत्तीस','तैंतीस','चौंतीस','पैंतीस','छत्तीस','सैंतीस','अड़तीस','उनतालीस','चालीस','इकतालीस','बयालीस','तैंतालीस','चवालीस','पैंतालीस','छयालीस','सैंतालीस','अड़तालीस','उनचास','पचास','इक्यावन','बावन','तिरपन','चौवन','पचपन','छप्पन','सत्तावन','अट्ठावन','उनसठ','साठ','इकसठ','बासठ','तिरसठ','चौंसठ','पैंसठ','छियासठ','सड़सठ','अड़सठ','उनहत्तर','सत्तर','इकहत्तर','बहत्तर','तिहत्तर','चौहत्तर','पचहत्तर','छिहत्तर','सतहत्तर','अठहत्तर','उन्यासी','अस्सी','इक्यासी','बयासी','तिरासी','चौरासी','पचासी','छियासी','सतासी','अट्ठासी','नवासी','नब्बे','इक्यानबे','बानबे','तिरानबे','चौरानबे','पंचानबे','छियानबे','सत्तानबे','अट्ठानबे','निन्यानबे'];
+  if(n < 100) return ek[n] || '';
+  const so = Math.floor(n / 100), ba = n % 100;
+  return (so === 1 ? 'एक सौ' : (ek[so] || '') + ' सौ') + (ba ? ' ' + (ek[ba] || '') : '');
+}
+
+/* क्रमांक + शब्द का पूरा वाक्य — जैसे असली ताम्बोले में बोलते हैं */
+function announcePhrase(num, word){
+  const h = hindiNumberWords(num);
+  return h ? ('क्रमांक ' + h + ' — ' + word) : String(word);
+}
+
+/* एक वाक्य बोलकर, खत्म होने पर कॉलबैक — आवाज़ों को क्रम में चलाने के लिए */
+function speakThen(text, onEnd){
+  if(!('speechSynthesis' in window)){ try{ (onEnd || function(){})(); }catch(e){} return; }
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  const u = new SpeechSynthesisUtterance(String(text || ''));
+  u.lang   = (window.JT_CONFIG && JT_CONFIG.SPEAK_LANG) || 'hi-IN';
+  u.rate   = (window.JT_CONFIG && JT_CONFIG.SPEAK_RATE) || 0.9;
+  u.pitch  = 1;
+  u.volume = 1;
+  if(_hiVoice) u.voice = _hiVoice;
+  const done = function(){
+    setTimeout(function(){ try{ (onEnd || function(){})(); }catch(e){} }, 250);
+  };
+  u.onend = done;
+  u.onerror = done;
+  window.speechSynthesis.speak(u);
+}
+
 /* छोटी बीप आवाज़ (Web Audio API) */
 let _audioCtx = null;
 function beep(freq, dur){
