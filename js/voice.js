@@ -5,6 +5,7 @@
    - रिकॉर्डिंग उसी फोन में (IndexedDB) सेव रहती है
    - गेम में शब्द निकलने पर:
      रिकॉर्डिंग है तो वही बजती है, नहीं तो TTS बोलता है
+   - v5.6.3: क्रमांक भी बोला जाता है (क्रमांक पंद्रह — अरिहंत)
    ============================================================ */
 var jtVoice = (function(){
   var DB_NAME = 'jt_voice', STORE = 'clips';
@@ -112,12 +113,41 @@ var jtVoice = (function(){
     });
   }
 
+  /* क्रमांक बोलकर फिर शब्द (v5.6.3):
+     रिकॉर्डिंग हो तो पहले TTS नंबर बोलेगा, फिर आपकी रिकॉर्डेड आवाज़ */
+  function sayAnnounce(num, word, times){
+    var hn = (typeof hindiNumberWords === 'function') ? hindiNumberWords(num) : '';
+    get(word).then(function(blob){
+      if(!blob){
+        try{ speakWord(hn ? ('क्रमांक ' + hn + ' — ' + word) : word, times); }catch(e){}
+        return;
+      }
+      var n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
+      var playRec = function(){
+        var i = 0;
+        function once(ok){
+          i++;
+          if(ok && i < n){
+            setTimeout(function(){ playBlob(blob).then(once); }, 250);
+          }
+        }
+        playBlob(blob).then(once);
+      };
+      if(hn && typeof speakThen === 'function'){
+        speakThen('क्रमांक ' + hn, playRec);
+      }else{
+        playRec();
+      }
+    });
+  }
+
   return {
     get: get,
     put: put,
     del: del,
     keys: keys,
     playBlob: playBlob,
-    sayWord: sayWord
+    sayWord: sayWord,
+    sayAnnounce: sayAnnounce
   };
 })();
