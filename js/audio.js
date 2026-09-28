@@ -2,7 +2,7 @@
    जैन ताम्बोला — आवाज़ (Text-to-Speech + बीप)
    ------------------------------------------------------------
    फिक्स 1: Web Speech API से हर शब्द हिंदी (hi-IN) में
-           3 बार साफ़-साफ़ बोला जाता है।
+           एक बार साफ़-साफ़ बोला जाता है।
    फिक्स 2: मोबाइल ब्राउज़र पर बिना टैप के आवाज़ नहीं बजती —
            इसलिए "आवाज़ अनलॉक" जोड़ा गया है। जब यूज़र कोई
            बटन दबाता है (जुड़ें / टेस्ट), आवाज़ इंजन अनलॉक
@@ -55,10 +55,10 @@ if('speechSynthesis' in window){
   }, 5000);
 }
 
-/* शब्द को हिंदी में निर्धारित बार (default: 3) बोलकर सुनाता है */
+/* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है */
 function speakWord(word, times){
   if(!('speechSynthesis' in window)) return;
-  const n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 3);
+  const n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
   try{ window.speechSynthesis.cancel(); }catch(e){}
   for(let i = 0; i < n; i++){
     const u = new SpeechSynthesisUtterance(String(word));

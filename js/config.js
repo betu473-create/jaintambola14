@@ -6,7 +6,7 @@ const JT_CONFIG = {
   /* आपकी नई लाइव साइट का पूरा लिंक */
   SITE_URL: 'https://jaintambola.netlify.app',
 
-  SPEAK_TIMES: 3,       /* हर शब्द कितनी बार बोला जाए */
+  SPEAK_TIMES: 1,       /* हर शब्द कितनी बार बोला जाए */
   SPEAK_LANG: 'hi-IN',  /* हिंदी आवाज़ (Web Speech API) */
   SPEAK_RATE: 0.85,     /* बोलने की रफ़्तार (1 = सामान्य) */
   AUTO_MODE_MS: 10000,  /* ऑटो मोड: अगला शब्द इतने मिलीसेकंड बाद */

@@ -95,7 +95,7 @@ var jtVoice = (function(){
 
   /* मुख्य फ़ंक्शन: रिकॉर्डिंग है तो वही (N बार), वरना TTS */
   function sayWord(word, times){
-    var n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 3);
+    var n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
     get(word).then(function(blob){
       if(!blob){
         try{ speakWord(word, times); }catch(e){}
