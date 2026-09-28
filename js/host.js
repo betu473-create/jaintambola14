@@ -615,6 +615,7 @@ function approveClaim(){
     toast('🏅 ' + label + ': ' + name);
     beep(1150, 0.3);
     offerWinnerPhoto(name, label);
+    announceWinnerVoice(name, label);
     return;
   }
   winnerFull = name;
@@ -641,6 +642,7 @@ function approveClaim(){
   setStatus('🏆 फुल हाउस विजेता (होस्ट द्वारा मंज़ूर): ' + name + ' । होस्ट का निर्णय अंतिम।');
   stopTimer();
   offerWinnerPhoto(name, 'फुल हाउस');
+  announceWinnerVoice(name, 'फुल हाउस');
 }
 
 function rejectClaim(){
@@ -876,6 +878,161 @@ $('wp-share').addEventListener('click', function(){
       a.click();
       document.body.removeChild(a);
       toast('फोटो डाउनलोड हुई — WhatsApp पर भेज दें');
+    }catch(err){ toast('शेयर नहीं हो पाया'); }
+  }
+});
+
+/* ==================== विजेता घोषणा — बोलकर (v5.6) ==================== */
+function announceWinnerVoice(name, label){
+  if(muted) return;
+  setTimeout(function(){
+    try{ speakWord(name + ' जी ' + label + ' के विजेता बन गए! बधाई हो!', 1); }catch(e){}
+  }, 700);
+}
+
+/* ==================== इनवाइट कार्ड (v5.6) ==================== */
+let inviteBlob = null;
+function _loadImg(src){
+  return new Promise(function(resolve, reject){
+    const im = new Image();
+    im.onload = function(){ resolve(im); };
+    im.onerror = reject;
+    im.src = src;
+  });
+}
+function _roundRect(x, rx, ry, rw, rh, r){
+  x.beginPath();
+  x.moveTo(rx + r, ry);
+  x.arcTo(rx + rw, ry, rx + rw, ry + rh, r);
+  x.arcTo(rx + rw, ry + rh, rx, ry + rh, r);
+  x.arcTo(rx, ry + rh, rx, ry, r);
+  x.arcTo(rx, ry, rx + rw, ry, r);
+  x.closePath();
+}
+$('invite-btn').addEventListener('click', function(){
+  const m = $('invite-modal');
+  if(!$('invite-date').value){
+    const d = new Date();
+    $('invite-date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    $('invite-time').value = '20:00';
+  }
+  m.classList.add('show');
+});
+$('invite-close').addEventListener('click', function(){ $('invite-modal').classList.remove('show'); });
+$('invite-make').addEventListener('click', function(){
+  const link = $('share-link').value || (jtSiteUrl() + '/join.html');
+  const code = $('room-code').textContent || '';
+  const dv = $('invite-date').value, tv = $('invite-time').value;
+  let qrSrc = null;
+  try{
+    const q = qrcode(0, 'M');
+    q.addData(link);
+    q.make();
+    qrSrc = q.createDataURL(10, 4);
+  }catch(e){}
+  Promise.all([
+    _loadImg('./icons/logo.jpg'),
+    qrSrc ? _loadImg(qrSrc) : Promise.resolve(null)
+  ]).then(function(res){
+    const logo = res[0], qrImg = res[1];
+    const W = 1080, H = 1400;
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#fff8ef');
+    g.addColorStop(0.5, '#ffe0b2');
+    g.addColorStop(1, '#ffcc80');
+    x.fillStyle = g;
+    x.fillRect(0, 0, W, H);
+    x.strokeStyle = '#e65100';
+    x.lineWidth = 14;
+    x.strokeRect(28, 28, W - 56, H - 56);
+    x.strokeStyle = '#bf360c';
+    x.lineWidth = 3;
+    x.strokeRect(48, 48, W - 96, H - 96);
+    x.save();
+    x.beginPath();
+    x.arc(W / 2, 240, 130, 0, Math.PI * 2);
+    x.closePath();
+    x.clip();
+    x.drawImage(logo, W / 2 - 130, 110, 260, 260);
+    x.restore();
+    x.strokeStyle = '#fff';
+    x.lineWidth = 10;
+    x.beginPath();
+    x.arc(W / 2, 240, 135, 0, Math.PI * 2);
+    x.stroke();
+    x.fillStyle = '#bf360c';
+    x.textAlign = 'center';
+    x.font = 'bold 92px sans-serif';
+    x.fillText('॥ जैन ताम्बोला ॥', W / 2, 520);
+    x.fillStyle = '#4e342e';
+    x.font = 'bold 58px sans-serif';
+    x.fillText('ऑनलाइन गेम निमंत्रण', W / 2, 610);
+    let dateLine = '';
+    try{
+      if(dv){
+        const dt = new Date(dv + 'T00:00:00');
+        dateLine = '📅 ' + dt.toLocaleDateString('hi-IN', { weekday:'long', day:'numeric', month:'long' });
+      }
+      if(tv){
+        const parts = tv.split(':');
+        let h = parseInt(parts[0], 10);
+        const ap = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        dateLine += '  •  ⏰ ' + h + ':' + parts[1] + ' ' + ap;
+      }
+    }catch(e){}
+    if(dateLine){
+      x.fillStyle = '#5d4037';
+      x.font = 'bold 48px sans-serif';
+      x.fillText(dateLine, W / 2, 720);
+    }
+    const qrSize = 400;
+    const qx = (W - qrSize) / 2;
+    const qy = 790;
+    x.fillStyle = '#fff';
+    _roundRect(x, qx - 25, qy - 25, qrSize + 50, qrSize + 105, 30);
+    x.fill();
+    if(qrImg){
+      x.imageSmoothingEnabled = false;
+      x.drawImage(qrImg, qx, qy, qrSize, qrSize);
+      x.imageSmoothingEnabled = true;
+    }
+    x.fillStyle = '#37474f';
+    x.font = 'bold 40px sans-serif';
+    x.fillText('📱 फोन से स्कैन करके गेम में जुड़ें', W / 2, qy + qrSize + 45);
+    x.fillStyle = '#b71c1c';
+    x.font = 'bold 64px sans-serif';
+    x.fillText('रूम कोड: ' + code, W / 2, 1330);
+    x.fillStyle = '#8d6e63';
+    x.font = 'bold 34px sans-serif';
+    x.fillText('Designed by Himanshu Jain', W / 2, 1378);
+    c.toBlob(function(blob){
+      if(!blob){ toast('⚠️ कार्ड नहीं बन पाया'); return; }
+      inviteBlob = new File([blob], 'jain-tambola-invite.jpg', { type:'image/jpeg' });
+      $('invite-img').src = URL.createObjectURL(blob);
+      $('invite-img').style.display = 'block';
+      $('invite-share').style.display = 'inline-block';
+      toast('🎴 कार्ड तैयार — शेयर करें बटन दबाएँ');
+    }, 'image/jpeg', 0.92);
+  }).catch(function(){ toast('⚠️ कार्ड नहीं बन पाया — दोबारा कोशिश करें'); });
+});
+$('invite-share').addEventListener('click', function(){
+  if(!inviteBlob){ toast('पहले ✨ कार्ड बनाएँ बटन दबाएँ'); return; }
+  if(navigator.canShare && navigator.canShare({ files: [inviteBlob] })){
+    navigator.share({ files: [inviteBlob], text: '॥ जैन ताम्बोला ॥ गेम में शामिल हों!' }).catch(function(){});
+  }else{
+    try{
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(inviteBlob);
+      a.download = 'jain-tambola-invite.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('कार्ड डाउनलोड हुआ — WhatsApp पर भेज दें');
     }catch(err){ toast('शेयर नहीं हो पाया'); }
   }
 });
