@@ -3,6 +3,7 @@
    फीचर्स: टाइमर, एनाउंसमेंट, चैट, हिस्ट्री, लीडरबोर्ड,
    म्यूज़िक, शब्द जोड़ना, प्राइज़ राउंड (जल्दी पाँच/कोन/लाइन),
    असली आवाज़ (voice pack), फुल हाउस, होस्ट रिकनेक्ट (पुराना गेम वापस),
+   नंबर + शब्द दोनों बोलना (क्रमांक पंद्रह — अरिहंत),
    तेज़ गेम (गेम-शब्द पूल: 60/90/150/सभी)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
@@ -458,15 +459,20 @@ function drawWord(){
   if(!started){ toast('पहले "गेम शुरू करें" दबाएँ'); return; }
   if(!deck.length){ toast('सभी शब्द आ चुके हैं'); stopAuto(); return; }
   const w = deck.pop();
+  const num = shabdNumber(w);
   drawn.push(w);
   drawnSet.add(w);
   lastWord = w;
   if(!muted){
     beep(880, 0.35);
-    if(window.jtVoice){ jtVoice.sayWord(w); } else { speakWord(w); }
+    /* नंबर + शब्द दोनों बोलो — जैसे असली ताम्बोले में (v5.6.3) */
+    if(window.jtVoice && jtVoice.sayAnnounce){ jtVoice.sayAnnounce(num, w); }
+    else{
+      try{ speakWord(announcePhrase(num, w)); }catch(e){ speakWord(w); }
+    }
   }
   showWord(w);
-  broadcast({ type:'word', word:w, num: shabdNumber(w) });
+  broadcast({ type:'word', word:w, num:num });
   renderChips();
   $('drawn-count').textContent = drawn.length;
   saveHostState();
