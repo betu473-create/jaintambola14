@@ -3,8 +3,10 @@
    ============================================================ */
 const JT_CONFIG = {
 
-  /* आपकी नई लाइव साइट का पूरा लिंक */
-  SITE_URL: 'https://jaintambola.netlify.app',
+  /* आपकी लाइव साइट का पूरा लिंक — खाली ('') छोड़ने पर ऐप खुद
+     जिस पते पर खुला है उसी के हिसाब से लिंक बनाएगा
+     (Netlify और GitHub Pages — दोनों पर सही चलेगा) */
+  SITE_URL: '',
 
   SPEAK_TIMES: 1,       /* हर शब्द कितनी बार बोला जाए */
   SPEAK_LANG: 'hi-IN',  /* हिंदी आवाज़ (Web Speech API) */
@@ -17,9 +19,15 @@ const JT_CONFIG = {
   HISTORY_DAYS: 1       /* गेम हिस्ट्री कितने दिन तक सेव रहे */
 };
 
-/* शेयर-लिंक बनाने के लिए साइट का पता */
+/* शेयर-लिंक बनाने के लिए साइट का पता
+   (SITE_URL खाली हो तो जिस पते पर ऐप खुला है वही इस्तेमाल होगा) */
 function jtSiteUrl(){
   const u = (JT_CONFIG.SITE_URL || '').trim();
   if(u) return u.replace(/\/+$/, '');
-  return (window.location.origin || '.');
+  try{
+    const p = window.location.pathname.replace(/[^/]*$/, '');
+    return (window.location.origin || '.') + p;
+  }catch(e){
+    return '.';
+  }
 }
