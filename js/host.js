@@ -1,7 +1,8 @@
 /* ============================================================
    जैन ताम्बोला — होस्ट स्क्रीन लॉजिक v8
    फीचर्स: टाइमर, एनाउंसमेंट, चैट, हिस्ट्री, लीडरबोर्ड,
-   म्यूज़िक, शब्द जोड़ना, सिर्फ फुल हाउस
+   म्यूज़िक, शब्द जोड़ना, प्राइज़ राउंड (जल्दी पाँच/कोन/लाइन),
+   असली आवाज़ (voice pack), फुल हाउस
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -17,6 +18,49 @@ let muted = false;
 let gameStartTime = null, timerInterval = null;
 let musicAudio = null;
 let lastWord = null;
+
+/* ==================== प्राइज़ सेटिंग्स (v5.6) ==================== */
+const PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
+let prizes = { jp:false, corner:false, line:false };
+let prizeWinners = {};
+function loadPrizes(){
+  try{
+    const p = JSON.parse(localStorage.getItem('jt_prizes') || '{}');
+    ['jp','corner','line'].forEach(function(k){
+      if(typeof p[k] === 'boolean') prizes[k] = p[k];
+    });
+  }catch(e){}
+  syncPrizeUI();
+  renderPrizeWinners();
+}
+function syncPrizeUI(){
+  ['jp','corner','line'].forEach(function(k){
+    const el = $('pr-' + k);
+    if(el) el.checked = !!prizes[k];
+  });
+}
+function savePrizes(){
+  ['jp','corner','line'].forEach(function(k){
+    const el = $('pr-' + k);
+    if(el) prizes[k] = el.checked;
+  });
+  try{ localStorage.setItem('jt_prizes', JSON.stringify(prizes)); }catch(e){}
+  broadcast({ type:'prizes', prizes:prizes, winners:prizeWinners });
+  renderPrizeWinners();
+  toast('🏆 प्राइज़ सेटिंग सेव — चालू राउंड अभी से लागू');
+}
+function renderPrizeWinners(){
+  const box = $('prize-winners');
+  if(!box) return;
+  let html = '';
+  ['jp','corner','line'].forEach(function(k){
+    if(!prizes[k]) return;
+    html += '<div>🏅 ' + PRIZE_LABELS[k] + ': ' +
+      (prizeWinners[k] ? '✅ <b>' + prizeWinners[k] + '</b>' : '—') + '</div>';
+  });
+  html += '<div>🏆 फुल हाउस: ' + (prizeWinners.full ? '✅ <b>' + prizeWinners.full + '</b>' : '—') + '</div>';
+  box.innerHTML = html;
+}
 
 /* ==================== हेल्पर ==================== */
 function shuffle(a){
@@ -228,7 +272,9 @@ $('music-stop').addEventListener('click', function(){
 });
 
 /* ==================== शब्द जोड़ना ==================== */
-$('word-add-btn').addEventListener('click', function(){
+var __jtAddBtn = null;
+try{ __jtAddBtn = $('word-add-btn'); }catch(e){}
+if(__jtAddBtn) __jtAddBtn.addEventListener('click', function(){
   const inp = $('word-add-input');
   const w = (inp.value || '').trim();
   const res = $('word-add-result');
@@ -323,7 +369,7 @@ function drawWord(){
   lastWord = w;
   if(!muted){
     beep(880, 0.35);
-    speakWord(w);
+    if(window.jtVoice){ jtVoice.sayWord(w); } else { speakWord(w); }
   }
   showWord(w);
   broadcast({ type:'word', word:w });
@@ -378,7 +424,7 @@ function sendTicketTo(conn){
   const words = makeTicket();
   if(players[conn.peer]) players[conn.peer].ticket = words;
   try{
-    conn.send({ type:'ticket', words:words, drawn:drawn });
+    conn.send({ type:'ticket', words:words, drawn:drawn, prizes:prizes, winners:prizeWinners });
   }catch(e){}
 }
 
@@ -411,7 +457,7 @@ function handleData(conn, d){
       if(existingTicket){
         /* रीकनेक्ट: पुरानी टिकट वापस भेजो */
         players[conn.peer].ticket = existingTicket;
-        try{ conn.send({ type:'ticket', words:existingTicket, drawn:drawn }); }catch(e){}
+        try{ conn.send({ type:'ticket', words:existingTicket, drawn:drawn, prizes:prizes, winners:prizeWinners }); }catch(e){}
         toast('🔄 ' + players[conn.peer].name + ' दोबारा जुड़ा (पुरानी टिकट वापस)');
       }else{
         sendTicketTo(conn);
@@ -419,6 +465,7 @@ function handleData(conn, d){
     }else{
       toast('🙋 ' + players[conn.peer].name + ' जुड़ गया');
     }
+    try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
   } else if(d.type === 'claim'){
     handleClaim(conn, d);
   } else if(d.type === 'chat' && d.msg){
@@ -435,38 +482,61 @@ function handleData(conn, d){
   }
 }
 
-/* सिर्फ फुल हाउस क्लेम सत्यापन (सिस्टम की जाँच — सिर्फ संकेत के लिए) */
-function validateClaim(d){
+/* क्लेम सत्यापन (सिस्टम की जाँच — सिर्फ संकेत के लिए; निर्णय होस्ट का) */
+function validateClaimPrize(d, prize){
   const t = Array.isArray(d.ticket) ? d.ticket : [];
-  return t.length === JT_CONFIG.TICKET_CELLS &&
-    t.every(function(w){ return drawnSet.has(w); });
+  const has = function(i){ return !!t[i] && drawnSet.has(t[i]); };
+  if(prize === 'full'){
+    return t.length === JT_CONFIG.TICKET_CELLS &&
+      t.every(function(w){ return drawnSet.has(w); });
+  }
+  if(prize === 'line'){
+    for(let r = 0; r < 3; r++){
+      if(has(r*4) && has(r*4+1) && has(r*4+2) && has(r*4+3)) return true;
+    }
+    return false;
+  }
+  if(prize === 'corner'){
+    return has(0) && has(3) && has(8) && has(11);
+  }
+  if(prize === 'jp'){
+    let n = 0;
+    t.forEach(function(w){ if(drawnSet.has(w)) n++; });
+    return n >= 5;
+  }
+  return false;
 }
 
 /* ==================== होस्ट की मैन्युअल जाँच ==================== */
 /* क्लेम आते ही होस्ट को मंज़ूर/नामंज़ूर बटन दिखते हैं — होस्ट का निर्णय अंतिम */
-let pendingClaim = null;   /* { conn, name, ticket, marks } */
+let pendingClaim = null;   /* { conn, name, prize, ticket, marks } */
 
 function handleClaim(conn, d){
   const name = String(d.name || 'खिलाड़ी');
-  const valid = validateClaim(d);
-  /* अगर पहले से विजेता हो गया है तो देर वाली क्लेम */
-  if(winnerFull){
+  let prize = (d && typeof d.prize === 'string') ? d.prize : 'full';
+  if(['jp','corner','line','full'].indexOf(prize) === -1) prize = 'full';
+  const prizeOn = (prize === 'full') || !!prizes[prize];
+  const valid = prizeOn && validateClaimPrize(d, prize);
+  const label = PRIZE_LABELS[prize] || 'फुल हाउस';
+  /* गेम खत्म, राउंड बंद, या राउंड जीता जा चुका — देर वाली/अमान्य क्लेम */
+  if(winnerFull || !prizeOn || prizeWinners[prize]){
     if(claimsFirst){ $('claims').innerHTML = ''; claimsFirst = false; }
     const row = document.createElement('div');
     row.className = 'claim-row';
-    row.textContent = '🙋 ' + name + ' • फुल हाउस • देर से क्लेम (विजेता पहले ही घोषित)';
+    row.textContent = '🙋 ' + name + ' • ' + label + ' • देर से क्लेम (' +
+      (!prizeOn ? 'यह राउंड चालू नहीं है' : 'विजेता पहले ही घोषित') + ')';
     $('claims').prepend(row);
     try{ conn.send({ type:'claim-result', ok:false, late:true }); }catch(e){}
     return;
   }
-  /* अगर पहले से कोई क्लेम पendi है तो उसे हटा दो (सिर्फ एक क्लेम एक बार में) */
+  /* अगर पहले से कोई क्लेम pending है तो उसे हटा दो (सिर्फ एक क्लेम एक बार में) */
   if(pendingClaim){
     try{ pendingClaim.conn.send({ type:'claim-result', ok:false, late:true }); }catch(e){}
   }
-  pendingClaim = { conn: conn, name: name, ticket: d.ticket || [], marks: d.marks || [] };
+  pendingClaim = { conn: conn, name: name, prize: prize, ticket: d.ticket || [], marks: d.marks || [] };
   beep(1100, 0.3);
-  toast('🙋 ' + name + ' ने क्लेम किया — अब आपका निर्णय दें');
-  setStatus('⚖️ ' + name + ' का क्लेम आया है — मंज़ूर या नामंज़ूर करें। होस्ट का निर्णय अंतिम है।');
+  toast('🙋 ' + name + ' ने ' + label + ' का क्लेम किया — अब आपका निर्णय दें');
+  setStatus('⚖️ ' + name + ' का ' + label + ' का क्लेम आया है — मंज़ूर या नामंज़ूर करें। होस्ट का निर्णय अंतिम है।');
   if(claimsFirst){ $('claims').innerHTML = ''; claimsFirst = false; }
   renderPendingClaim(valid);
 }
@@ -479,7 +549,7 @@ function renderPendingClaim(sysValid){
   item.style.borderLeft = '5px solid #ff6f00';
   /* नाम + समय */
   const line1 = document.createElement('div');
-  line1.textContent = '🙋 ' + pendingClaim.name + ' • फुल हाउस • ' +
+  line1.textContent = '🙋 ' + pendingClaim.name + ' • ' + (PRIZE_LABELS[pendingClaim.prize] || 'फुल हाउस') + ' • ' +
     new Date().toLocaleTimeString('hi-IN') +
     (sysValid ? ' • सिस्टम जाँच: सही ✅' : ' • सिस्टम जाँच: अमान्य ❌ (फिर भी आप तय करें)');
   line1.style.fontWeight = '700';
@@ -511,7 +581,25 @@ function approveClaim(){
   if(!pendingClaim) return;
   const name = pendingClaim.name;
   const conn = pendingClaim.conn;
+  const prize = pendingClaim.prize || 'full';
+  const label = PRIZE_LABELS[prize] || 'फुल हाउस';
   pendingClaim = null;
+  prizeWinners[prize] = name;
+  renderPrizeWinners();
+  if(prize !== 'full'){
+    /* जल्दी पाँच / चार कोन / लाइन का विजेता — गेम जारी रहेगा */
+    broadcast({ type:'claim-result', ok:true, name:name, prize:prize });
+    const row2 = document.createElement('div');
+    row2.className = 'claim-row';
+    row2.style.borderLeftColor = '#2e7d32';
+    row2.textContent = '✅ मंज़ूर — 🏅 ' + name + ' • ' + label + ' विजेता (' + new Date().toLocaleTimeString('hi-IN') + ')';
+    $('claims').prepend(row2);
+    addWinnerToBoard(name + ' (' + label + ')');
+    setStatus('🏅 ' + label + ' विजेता: ' + name + ' — गेम जारी रहेगा');
+    toast('🏅 ' + label + ': ' + name);
+    beep(1150, 0.3);
+    return;
+  }
   winnerFull = name;
   /* हिस्ट्री + लीडरबोर्ड */
   const dur = gameStartTime ? $('game-timer').textContent.replace('⏱ ', '') : '';
@@ -639,10 +727,13 @@ $('start-btn').addEventListener('click', function(){
   unlockSpeech();
   started = true;
   winnerFull = null;
+  prizeWinners = {};
+  renderPrizeWinners();
   deck = shuffle(SHABD_LIST.slice());
   drawn = []; drawnSet.clear();
   resetBoard();
   broadcast({ type:'start' });
+  broadcast({ type:'prizes', prizes:prizes, winners:prizeWinners });
   Object.keys(conns).forEach(function(id){ sendTicketTo(conns[id]); });
   $('next-btn').disabled = false;
   $('auto-btn').disabled = false;
@@ -658,6 +749,7 @@ $('auto-btn').addEventListener('click', function(){
 });
 $('newgame-btn').addEventListener('click', function(){
   started = false; winnerFull = null; lastWord = null;
+  prizeWinners = {}; renderPrizeWinners();
   deck = []; drawn = []; drawnSet.clear();
   stopAuto(); stopTimer();
   $('game-timer').style.display = 'none';
@@ -691,6 +783,11 @@ $('modal-bg').addEventListener('click', function(e){
 });
 
 /* ==================== शुरुआत ==================== */
+loadPrizes();
+['jp','corner','line'].forEach(function(k){
+  const el = $('pr-' + k);
+  if(el) el.addEventListener('change', savePrizes);
+});
 $('total-count').textContent = SHABD_LIST.length;
 renderHistory();
 renderLeaderboard();
