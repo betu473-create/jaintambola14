@@ -10,12 +10,18 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <meta name="theme-color" content="#e65100">
 <link rel="stylesheet" href="./css/style.css">
+<style>
+.top-ic{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1.5px solid #ffe0b2;border-radius:12px;text-decoration:none;font-size:1.2rem;cursor:pointer}
+</style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <div class="brand">॥ जैन ताम्बोला ॥</div>
-    <a href="./rules.html">नियम देखें</a>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a href="./rules.html" style="font-size:.9rem">नियम देखें</a>
+      <a class="top-ic" href="./settings.html" title="सेटिंग्स">⚙️</a>
+    </div>
   </div>
 
   <div class="card" style="text-align:center">
@@ -32,7 +38,6 @@
 
   <a class="btn" href="./host.html">🎙 गेम होस्ट करें (होस्ट स्क्रीन)</a>
   <a class="btn green" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
-  <a class="btn ghost" href="./settings.html" style="background:#fff;color:#37474f;border-color:#b0bec5">⚙️ सेटिंग्स — शब्द सूची • प्रिंट • प्राइज़ • प्रोजेक्टर</a>
 
   <div class="card" style="text-align:center">
     <p class="muted" style="margin:0">
@@ -41,9 +46,7 @@
     </p>
   </div>
 
-  <div class="designed-by">
-    Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6</span>
-  </div>
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
 <script src="./js/pwa.js"></script>
