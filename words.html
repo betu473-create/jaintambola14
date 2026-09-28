@@ -45,6 +45,11 @@
       <button class="btn small" id="wl-add-btn" type="button">➕ जोड़ें</button>
     </div>
     <input class="wl-search" id="wl-search" type="text" placeholder="🔍 शब्द खोजें...">
+    <div style="display:flex;gap:8px;margin:8px 0;align-items:center;flex-wrap:wrap">
+      <button class="btn small" id="wl-voice-btn" type="button">🎙 असली आवाज़ (रिकॉर्ड करें)</button>
+      <span class="muted" id="wl-voice-count" style="font-size:.85rem"></span>
+    </div>
+    <div class="wl-warn" id="wl-voice-note" style="display:none;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20">🎙 <b>आवाज़ मोड चालू है</b> — हर शब्द के सामने 🎙 दबाकर शब्द बोलें, फिर उसी बटन (⏹) से रोकें। रिकॉर्ड हुई आवाज़ गेम में शब्द निकलने पर बजेगी। ▶️ से सुनकर जाँचें। (गेम हमेशा इसी फोन से होस्ट करें)</div>
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn ghost" id="wl-reset" type="button" style="width:100%;margin-top:6px">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
@@ -62,6 +67,7 @@
 
 <script src="./js/config.js"></script>
 <script src="./js/words.js"></script>
+<script src="./js/voice.js"></script>
 <script src="./js/pwa.js"></script>
 <script>
 (function(){
@@ -72,7 +78,7 @@
   var warnEl = document.getElementById('wl-warn');
   var newInp = document.getElementById('wl-new');
 
-  var MIN_WORDS = 13; /* एक टिकट = 12 खंड, इसलिए कम से कम 13 शब्द */
+  var MIN_WORDS = 13; /* एक टिकट = 12 खंड, इसलिए कम से कम 13 शब्ड */
 
   var toastEl = null, toastTimer = null;
   function toast(msg){
@@ -98,7 +104,7 @@
     if(hasCustom()){
       var b = document.createElement('span');
       b.className = 'wl-badge';
-      b.textContent = '✅ आपकी बदली हुई सूची चल रही है';
+      b.textContent = '✅ आपकी बदी हुई सूची चल रही है';
       customEl.appendChild(b);
     }
     if(n < MIN_WORDS){
@@ -137,6 +143,20 @@
       bd.title = 'हटाएँ'; bd.textContent = '❌';
       bd.setAttribute('data-act', 'del'); bd.setAttribute('data-i', i);
       tools.appendChild(be); tools.appendChild(bd);
+      if(voiceMode){
+        var bv = document.createElement('button');
+        bv.className = 'wl-btn'; bv.type = 'button';
+        bv.title = 'आवाज़ रिकॉर्ड करें';
+        bv.textContent = (recWord === w) ? '⏹' : (recorded[w] ? '🔁' : '🎙');
+        bv.setAttribute('data-act', 'rec'); bv.setAttribute('data-w', w);
+        var bp = document.createElement('button');
+        bp.className = 'wl-btn'; bp.type = 'button';
+        bp.title = 'सुनें'; bp.textContent = '▶️';
+        if(!recorded[w]) bp.style.opacity = '.35';
+        bp.setAttribute('data-act', 'vplay'); bp.setAttribute('data-w', w);
+        tools.appendChild(bv); tools.appendChild(bp);
+        if(recorded[w]) d.style.background = '#f1f8e9';
+      }
 
       d.appendChild(n); d.appendChild(t); d.appendChild(tools);
       grid.appendChild(d);
@@ -145,6 +165,66 @@
       ? shown + ' शब्द मिले (कुल ' + SHABD_LIST.length + ' में से)'
       : 'कुल ' + SHABD_LIST.length + ' शब्द';
   }
+
+  /* ==================== असली आवाज़ (v5.6) ==================== */
+  var voiceMode = false;
+  var recorded = {};
+  var recWord = null, recMr = null, recStream = null, recChunks = [];
+
+  function refreshRecorded(){
+    if(!window.jtVoice){ return; }
+    jtVoice.keys().then(function(ks){
+      recorded = {};
+      (ks || []).forEach(function(w){ recorded[w] = true; });
+      var n = Object.keys(recorded).length;
+      var el = document.getElementById('wl-voice-count');
+      if(el) el.textContent = n ? '🎙 ' + n + ' शब्दों की आवाज़ रिकॉर्ड है' : '';
+      render(search.value);
+    });
+  }
+  function startRec(word, btn){
+    if(!navigator.mediaDevices || !window.MediaRecorder){
+      toast('⚠️ इस ब्राउज़र में रिकॉर्डिंग नहीं चलती — Chrome आज़माएँ'); return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+      recStream = stream; recChunks = []; recWord = word;
+      recMr = new MediaRecorder(stream);
+      recMr.ondataavailable = function(e){ if(e.data && e.data.size) recChunks.push(e.data); };
+      recMr.onstop = function(){
+        try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(err){}
+        var blob = new Blob(recChunks, { type: (recMr && recMr.mimeType) || 'audio/webm' });
+        var w = recWord; recWord = null;
+        if(blob.size < 300){
+          toast('⚠️ आवाज़ बहुत छोटी रही — दोबारा कोशिश करें');
+          render(search.value); return;
+        }
+        jtVoice.put(w, blob).then(function(ok){
+          toast(ok ? '✅ आवाज़ सेव हुई: ' + w : '⚠️ आवाज़ सेव नहीं हो पाई');
+          refreshRecorded();
+        });
+      };
+      try{ recMr.start(); }catch(err){ recWord = null; return; }
+      btn.textContent = '⏹';
+      btn.title = 'रिकॉर्डिंग रोकें';
+      toast('🔴 बोलिए: "' + word + '" — फिर उसी बटन (⏹) को दबाकर रोकें');
+    }).catch(function(){
+      toast('🎙 माइक की अनुमति नहीं मिली');
+    });
+  }
+  function stopRec(){
+    if(recMr && recMr.state !== 'inactive'){
+      try{ recMr.stop(); }catch(e){}
+    }
+  }
+
+  document.getElementById('wl-voice-btn').addEventListener('click', function(){
+    if(recWord) stopRec();
+    voiceMode = !voiceMode;
+    this.textContent = voiceMode ? '✖️ आवाज़ मोड बंद करें' : '🎙 असली आवाज़ (रिकॉर्ड करें)';
+    document.getElementById('wl-voice-note').style.display = voiceMode ? 'block' : 'none';
+    if(voiceMode) refreshRecorded();
+    else { document.getElementById('wl-voice-count').textContent = ''; render(search.value); }
+  });
 
   /* जोड़ना */
   function addWord(){
@@ -164,9 +244,26 @@
   grid.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('[data-act]') : null;
     if(!btn) return;
+    var act = btn.getAttribute('data-act');
+
+    if(act === 'rec' || act === 'vplay'){
+      var word = btn.getAttribute('data-w') || '';
+      if(!word) return;
+      if(act === 'vplay'){
+        jtVoice.get(word).then(function(b){
+          if(b){ jtVoice.playBlob(b); }
+          else { toast('इस शब्द की आवाज़ अभी रिकॉर्ड नहीं हुई — पहले 🎙 दबाएँ'); }
+        });
+        return;
+      }
+      if(recWord === word){ stopRec(); return; }
+      if(recWord){ stopRec(); }
+      startRec(word, btn);
+      return;
+    }
+
     var i = parseInt(btn.getAttribute('data-i'), 10);
     if(isNaN(i) || i < 0 || i >= SHABD_LIST.length) return;
-    var act = btn.getAttribute('data-act');
 
     if(act === 'del'){
       if(!confirm('“' + SHABD_LIST[i] + '” शब्द हटाना है?')) return;
