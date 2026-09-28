@@ -2,7 +2,7 @@
    जैन ताम्बोला — होस्ट स्क्रीन लॉजिक v8
    फीचर्स: टाइमर, एनाउंसमेंट, चैट, हिस्ट्री, लीडरबोर्ड,
    म्यूज़िक, शब्द जोड़ना, प्राइज़ राउंड (जल्दी पाँच/कोन/लाइन),
-   असली आवाज़ (voice pack), फुल हाउस
+   असली आवाज़ (voice pack), फुल हाउस, होस्ट रिकनेक्ट (पुराना गेम वापस)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -108,6 +108,86 @@ function updateTimer(){
   const ss = String(s % 60).padStart(2, '0');
   $('game-timer').textContent = '⏱ ' + mm + ':' + ss;
 }
+
+/* ==================== होस्ट रिकनेक्ट — पुराना गेम वापस (v5.6) ==================== */
+const HOST_STATE_KEY = 'jt_host_state';
+const HOST_STATE_MAX_MS = 6 * 3600000; /* 6 घंटे तक याद रहेगा */
+function saveHostState(){
+  if(!started) return;
+  try{
+    localStorage.setItem(HOST_STATE_KEY, JSON.stringify({
+      time: Date.now(),
+      room: $('room-code').textContent,
+      started: started,
+      deck: deck,
+      drawn: drawn,
+      prizeWinners: prizeWinners,
+      gameStartMs: gameStartTime,
+      players: Object.keys(players).filter(function(id){ return !players[id].screen; }).map(function(id){
+        return { name: players[id].name, deviceId: players[id].deviceId || '', ticket: players[id].ticket || null };
+      })
+    }));
+  }catch(e){}
+}
+function clearHostState(){ try{ localStorage.removeItem(HOST_STATE_KEY); }catch(e){} }
+function readHostState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(HOST_STATE_KEY) || 'null');
+    if(s && s.room && s.started && Array.isArray(s.deck) && Array.isArray(s.drawn) &&
+       (Date.now() - (s.time || 0)) < HOST_STATE_MAX_MS) return s;
+  }catch(e){}
+  return null;
+}
+function restoreHostState(){
+  const s = readHostState();
+  if(!s) return;
+  createRoom(String(s.room)); /* वही रूम कोड — लिंक भी वही रहेगा */
+  started = true;
+  winnerFull = null;
+  deck = s.deck;
+  drawn = s.drawn;
+  drawnSet.clear();
+  drawn.forEach(function(w){ drawnSet.add(w); });
+  prizeWinners = s.prizeWinners || {};
+  renderPrizeWinners();
+  (s.players || []).forEach(function(p){
+    if(!p || !p.name) return;
+    players['saved-' + (p.deviceId || p.name)] = {
+      name: p.name, deviceId: p.deviceId || '', ticket: p.ticket || null, dup: false
+    };
+  });
+  renderPlayers();
+  renderChips();
+  $('drawn-count').textContent = drawn.length;
+  if(s.gameStartMs){
+    gameStartTime = s.gameStartMs;
+    $('game-timer').style.display = 'inline-flex';
+    timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+  }
+  if(drawn.length){
+    lastWord = drawn[drawn.length - 1];
+    const el = $('current-shabd');
+    const num = shabdNumber(lastWord);
+    el.innerHTML = '<span style="font-size:.45em;opacity:.7;display:block;margin-bottom:4px">क्र. ' + num + '</span>' + lastWord;
+    el.classList.add('pop');
+    $('word-sub').textContent = 'शब्द ' + drawn.length + ' / ' + SHABD_LIST.length + ' (वापस लाया गया)';
+  }
+  $('next-btn').disabled = !deck.length;
+  $('auto-btn').disabled = !deck.length;
+  setStatus('🔄 पुराना गेम वापस लाया गया — रूम कोड ' + s.room + ' वही है। खिलाड़ी पुराना लिंक टच करके दोबारा जुड़ जाएँगे और उन्हें वही पुरानी टिकट मिलेगी।');
+  toast('🔄 पुराना गेम वापस — रूम ' + s.room + ' वही है');
+  saveHostState();
+}
+$('resume-yes').addEventListener('click', function(){
+  $('resume-banner').style.display = 'none';
+  restoreHostState();
+});
+$('resume-no').addEventListener('click', function(){
+  $('resume-banner').style.display = 'none';
+  clearHostState();
+  toast('नया गेम शुरू — पुराना हटाया गया');
+});
 
 /* ==================== चैट ==================== */
 function addChatMsg(name, msg, cls){
@@ -384,6 +464,7 @@ function drawWord(){
   broadcast({ type:'word', word:w, num: shabdNumber(w) });
   renderChips();
   $('drawn-count').textContent = drawn.length;
+  saveHostState();
   if(!deck.length){
     stopAuto();
     setStatus('सभी ' + SHABD_LIST.length + ' शब्द आ चुके — क्लेम की प्रतीक्षा…');
@@ -462,6 +543,12 @@ function handleData(conn, d){
       deviceId: devId,
       ticket: existingTicket || null
     };
+    /* होस्ट-रिकनेक्ट का सेव किया खिलाड़ी — उसी डिवाइस का डुप्लिकेट हटाओ */
+    if(devId){
+      Object.keys(players).forEach(function(id){
+        if(id.indexOf('saved-') === 0 && players[id] && players[id].deviceId === devId) delete players[id];
+      });
+    }
     if(devId){
       const dup = Object.keys(players).some(function(id){
         return id !== conn.peer && players[id].deviceId === devId;
@@ -482,6 +569,7 @@ function handleData(conn, d){
       toast('🙋 ' + players[conn.peer].name + ' जुड़ गया');
     }
     try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
+    saveHostState();
   } else if(d.type === 'claim'){
     handleClaim(conn, d);
   } else if(d.type === 'winner-selfie' && d.img && d.name){
@@ -621,6 +709,7 @@ function approveClaim(){
     beep(1150, 0.3);
     offerWinnerPhoto(name, label);
     announceWinnerVoice(name, label);
+    saveHostState();
     return;
   }
   winnerFull = name;
@@ -648,6 +737,7 @@ function approveClaim(){
   stopTimer();
   offerWinnerPhoto(name, 'फुल हाउस');
   announceWinnerVoice(name, 'फुल हाउस');
+  clearHostState(); /* फुल हाउस पूरा — अब वापस लाने की ज़रूरत नहीं */
 }
 
 function rejectClaim(){
@@ -771,6 +861,8 @@ $('start-btn').addEventListener('click', function(){
   $('next-btn').disabled = false;
   $('auto-btn').disabled = false;
   startTimer();
+  saveHostState();
+  $('resume-banner').style.display = 'none';
   setStatus('✅ गेम शुरू — सबको डिजिटल टिकट भेज दए गए। अब शब्द निकालें।');
 });
 $('next-btn').addEventListener('click', function(){
@@ -790,6 +882,8 @@ $('newgame-btn').addEventListener('click', function(){
   $('next-btn').disabled = true;
   $('auto-btn').disabled = true;
   broadcast({ type:'reset' });
+  clearHostState();
+  $('resume-banner').style.display = 'none';
   setStatus('🔄 गेम रीसेट — दोबारा "गेम शुरू करें" दबाएँ (सबको नए टिकट मिलेंगे)।');
 });
 $('copy-btn').addEventListener('click', function(){
@@ -803,7 +897,7 @@ $('copy-btn').addEventListener('click', function(){
     catch(e){ toast('कॉपी नहीं हुआ — लिंक चुनकर मैन्युअली कॉपी करें'); }
   }
 });
-$('regen-btn').addEventListener('click', function(){ createRoom(makeRoomCode()); });
+$('regen-btn').addEventListener('click', function(){ clearHostState(); $('resume-banner').style.display = 'none'; createRoom(makeRoomCode()); });
 $('mute-btn').addEventListener('click', function(){
   muted = !muted;
   if(muted){ stopSpeaking(); }
@@ -1078,3 +1172,10 @@ $('total-count').textContent = SHABD_LIST.length;
 renderHistory();
 renderLeaderboard();
 createRoom(makeRoomCode());
+/* पुराना अधूरा गेम मिले तो बैनर दिखाओ */
+(function(){
+  const s = readHostState();
+  if(!s) return;
+  $('resume-room').textContent = s.room;
+  $('resume-banner').style.display = 'block';
+})();
