@@ -54,6 +54,7 @@
     </div>
     <div class="btn-row" style="margin-top:8px">
       <a class="btn small ghost" id="screen-link" target="_blank" rel="noopener" style="background:#fff;color:#00695c;border-color:#80cbc4">📺 प्रोजेक्टर स्क्रीन खोलें</a>
+      <button class="btn small ghost" id="invite-btn" type="button" style="background:#fff;color:#6a1b9a;border-color:#ce93d8">🎴 इनवाइट कार्ड</button>
     </div>
     <div id="qr-box" style="background:#fff;border:1.5px solid #ffe0b2;border-radius:14px;padding:12px;margin-top:12px;text-align:center"></div>
   </div>
@@ -79,7 +80,7 @@
         <option value="7000">ऑटो मोड: तेज़ (7 सेकंड)</option>
       </select>
     </div>
-    <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में 3 बार बोलकर सुनाएगी। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
+    <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में एक बार साफ़-साफ़ बोलकर सुनाएगी। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
   </div>
 
   <div class="word-card">
@@ -176,6 +177,22 @@
     <div class="wname" id="winner-big-name"></div>
     <div class="wsub">फुल हाउस विजेता</div>
     <button class="btn" id="winner-big-close" type="button" style="margin-top:16px">🎉 बधाई दें</button>
+  </div>
+</div>
+
+<!-- इनवाइट कार्ड मॉडल -->
+<div class="modal-bg" id="invite-modal">
+  <div class="modal">
+    <h2 style="color:#bf360c;font-size:1.05rem;margin:0 0 12px">🎴 गेम इनवाइट कार्ड</h2>
+    <p class="muted" style="margin:0 0 8px;font-size:.85rem">तारीख-समय चुनें और सुंदर कार्ड बनाकर WhatsApp पर भेजें।</p>
+    <input class="txt" type="date" id="invite-date" aria-label="तारीख">
+    <input class="txt" type="time" id="invite-time" aria-label="समय">
+    <button class="btn" id="invite-make" type="button" style="margin-top:8px">✨ कार्ड बनाएँ</button>
+    <img id="invite-img" alt="इनवाइट कार्ड" style="width:100%;border-radius:12px;margin-top:12px;display:none">
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn small" id="invite-share" type="button" style="display:none">📤 शेयर / सेव करें</button>
+      <button class="btn small ghost" id="invite-close" type="button">बंद करें</button>
+    </div>
   </div>
 </div>
 
