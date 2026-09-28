@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>सेटिंग्स — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला — सभी सेटिंग्स एक जगह">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#e65100">
+<link rel="stylesheet" href="./css/style.css">
+<style>
+.set-link{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #ffecdf;border-radius:14px;padding:13px 14px;margin:8px 0;text-decoration:none;color:#4e342e;font-weight:700}
+.set-link .ic{font-size:1.35rem;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:#fff3e0;border-radius:10px;flex-shrink:0}
+.set-link .tx{flex:1;min-width:0}
+.set-link .tt{font-size:.98rem}
+.set-link .dd{font-size:.78rem;color:#8d6e63;font-weight:600;margin-top:2px}
+.set-link .ar{color:#bcaaa4;font-size:1.2rem}
+.prize-opt{display:block;padding:10px 12px;border:1.5px solid #ffe0b2;border-radius:10px;margin:7px 0;font-weight:700;color:#4e342e;cursor:pointer;background:#fff}
+.prize-opt input{width:19px;height:19px;vertical-align:-3px;margin-right:8px;accent-color:#e65100}
+.sw-row{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid #ffecdf;border-radius:12px;padding:12px 14px;margin:8px 0;font-weight:700;color:#4e342e}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">⚙️ सेटिंग्स</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="./host.html">🎮 होस्ट</a>
+      <a href="./index.html">होम</a>
+    </div>
+  </div>
+  <div class="status">सभी सेटिंग्स एक जगह — व्वस्थित और आसान</div>
+
+  <!-- प्राइज़ राउंड -->
+  <div class="card">
+    <h2>🏆 प्राइज़ राउंड</h2>
+    <label class="prize-opt"><input type="checkbox" id="pr-jp"> 🥇 जल्दी पाँच — पहले 5 शब्द पूरे होने पर</label>
+    <label class="prize-opt"><input type="checkbox" id="pr-corner"> 🔶 चार कोन — टिकट के 4 कोनों वाले शब्द पूरे होने पर</label>
+    <label class="prize-opt"><input type="checkbox" id="pr-line"> 📏 लाइन — कोई भी एक पूरी पंक्ति (4 शब्द) पूरी होने पर</label>
+    <p class="muted">🏆 फुल हाउस हमेशा चालू रहता है। सिर्फ फुल हाउस खेलना हो तो तीनों का टिक हटा दें। बदलाव तुरंत सेव होता है — नया गेम शुरू करने से पहले सेट कर लें।</p>
+  </div>
+
+  <!-- टूल्स -->
+  <div class="card">
+    <h2>🧰 टूल्स</h2>
+    <a class="set-link" href="./words.html">
+      <span class="ic">📖</span>
+      <span class="tx"><span class="tt">शब्द सूची मैनेजर</span><span class="dd">शब्द जोड़ें / हटाएँ • 🎤 असली आवाज़ रिकॉर्ड करें</span></span>
+      <span class="ar">›</span>
+    </a>
+    <a class="set-link" href="./print.html">
+      <span class="ic">🖨</span>
+      <span class="tx"><span class="tt">प्रिंट सेंटर</span><span class="dd">कागज़ की टिकट शीट + बाउल वाली बड़ी पर्ची</span></span>
+      <span class="ar">›</span>
+    </a>
+    <a class="set-link" href="./screen.html">
+      <span class="ic">📺</span>
+      <span class="tx"><span class="tt">प्रोजेक्टर मोड</span><span class="dd">बड़ी स्क्रीन / TV पर गेम दिखाएँ</span></span>
+      <span class="ar">›</span>
+    </a>
+    <a class="set-link" href="./rules.html">
+      <span class="ic">📜</span>
+      <span class="tx"><span class="tt">गेम के नियम</span><span class="dd">खिलाड़ियों को समझाने के लिए</span></span>
+      <span class="ar">›</span>
+    </a>
+  </div>
+
+  <!-- ऐप जानकारी -->
+  <div class="card">
+    <h2>ℹ️ ऐप के बारे में</h2>
+    <div class="sw-row"><span>संस्करण</span><span style="color:#e65100">v5.6</span></div>
+    <div class="sw-row"><span>इंटरनेट लगा हो तो ऑनलाइन गेम</span><span style="color:#2e7d32">✓</span></div>
+    <div class="sw-row"><span>इंस्टॉल के बाद ऑफ़लाइन भी चलती है (PWA)</span><span style="color:#2e7d32">✓</span></div>
+    <div class="sw-row"><span>एक फोन = एक ही लाइव डिजिटल टिकट</span><span style="color:#2e7d32">✓</span></div>
+  </div>
+
+  <a class="btn" href="./host.html">🎮 होस्ट स्क्रीन पर लौटें</a>
+
+  <div class="designed-by">
+    Designed by <b>Himanshu Jain</b> (7747957576)
+  </div>
+  <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
+</div>
+<script src="./js/pwa.js"></script>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var prizes = { jp:false, corner:false, line:false };
+  try{
+    var p = JSON.parse(localStorage.getItem('jt_prizes') || '{}');
+    ['jp','corner','line'].forEach(function(k){
+      if(typeof p[k] === 'boolean') prizes[k] = p[k];
+    });
+  }catch(e){}
+  ['jp','corner','line'].forEach(function(k){
+    var el = $('pr-' + k);
+    if(el){
+      el.checked = !!prizes[k];
+      el.addEventListener('change', function(){
+        prizes[k] = el.checked;
+        try{ localStorage.setItem('jt_prizes', JSON.stringify(prizes)); }catch(e){}
+        var t = $('saved-toast');
+        if(t){ t.textContent = '✅ सेव हो गया'; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 1800); }
+      });
+    }
+  });
+})();
+</script>
+<div class="toast" id="saved-toast"></div>
+</body>
+</html>

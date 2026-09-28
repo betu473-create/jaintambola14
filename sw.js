@@ -18,6 +18,7 @@ const ASSETS = [
   './words.html',
   './print.html',
   './screen.html',
+  './settings.html',
   './css/style.css',
   './js/config.js',
   './js/words.js',
