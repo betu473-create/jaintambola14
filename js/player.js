@@ -1,6 +1,7 @@
 /* ============================================================
    जैन ताम्बोला — खिलाड़ी स्क्रीन लॉजिक v8
-   फीचर्स: चैट, रिपीट(1बार), एनाउंसमेंट, विजेता सेलिब्रेशन
+   फीचर्स: चैट, रिपीट(1बार), एनाउंसमेंट, विजेता सेलिब्रेशन,
+   प्राइज़ राउंड (जल्दी पाँच / चार कोन / लाइन / फुल हाउस)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -11,6 +12,11 @@ let muted = false, claimed = false, winner = null;
 let lastWord = null;
 let wrongClaims = 0;   /* गलत क्लेम की गिनती (3 पर गेम से बाहर) */
 const repeatUsed = new Set();
+const PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
+let myPrizes = { jp:false, corner:false, line:false };
+let roundWinners = {};
+let myClaimedRounds = {};
+let kickedOut = false;   /* 3 गलत क्लेम = गेम से बाहर */
 
 /* ==================== रीकनेक्ट: टिकट सेव/रिस्टोर ==================== */
 function saveTicketLocal(roomCode, words, name){
@@ -123,6 +129,7 @@ function tap(w, el){
   el.classList.add('marked');
   beep(1320, 0.15);
   updateProgress();
+  updateClaimBtn();
   if(markedSet.size === JT_CONFIG.TICKET_CELLS){
     setGStatus('🏆 पूरे 12 खंड (Full House) पूरे! तुरंत Claim बटन दबाएँ');
     toast('🏆 फुल हाउस! अब Claim बटन दबाएँ');
@@ -161,18 +168,20 @@ function onWord(w){
   if(cell) cell.classList.add('came');
   setGStatus('📢 शब्द आया: ' + w + (cell ? ' — यह आपकी टिकट में है, तुरंत टैप करें!' : ''));
   updateRepeatBtn();
+  updateClaimBtn();
 }
 
 function resetLocal(){
   drawnSet.clear(); markedSet.clear();
   claimed = false; winner = null; lastWord = null;
   wrongClaims = 0;
+  roundWinners = {}; myClaimedRounds = {}; kickedOut = false;
   repeatUsed.clear();
   myTicket = [];
   $('ticket').innerHTML = '';
   $('repeat-btn').disabled = true;
   $('claim-btn').disabled = true;
-  $('claim-btn').textContent = '🏆 Claim — पूरे 12 खंड पूरे होने पर दबाएँ';
+  $('claim-btn').textContent = '🏆 Claim — प्राइज़ पूरा होने पर यह बटन खुद चालू होगा';
   $('announce-banner').classList.remove('show');
   $('winner-box').classList.remove('show');
   $('winner-big').classList.remove('show');
@@ -190,7 +199,14 @@ function onData(d){
   else if(d.type === 'ticket'){
     myTicket = Array.isArray(d.words) ? d.words : [];
     if(Array.isArray(d.drawn)) d.drawn.forEach(function(w){ drawnSet.add(w); });
+    if(d.prizes && typeof d.prizes === 'object'){
+      ['jp','corner','line'].forEach(function(k){
+        if(typeof d.prizes[k] === 'boolean') myPrizes[k] = d.prizes[k];
+      });
+    }
+    if(d.winners && typeof d.winners === 'object') roundWinners = d.winners;
     renderTicket();
+    updateClaimBtn();
     /* रीकनेक्ट: टिकट सेव करो */
     const rc = ($('room-input').value || '').toUpperCase();
     saveTicketLocal(rc, myTicket, myName);
@@ -198,6 +214,15 @@ function onData(d){
   }
   else if(d.type === 'word'){ onWord(d.word); }
   else if(d.type === 'reset'){ resetLocal(); }
+  else if(d.type === 'prizes'){
+    if(d.prizes && typeof d.prizes === 'object'){
+      ['jp','corner','line'].forEach(function(k){
+        if(typeof d.prizes[k] === 'boolean') myPrizes[k] = d.prizes[k];
+      });
+    }
+    if(d.winners && typeof d.winners === 'object') roundWinners = d.winners;
+    updateClaimBtn();
+  }
   else if(d.type === 'announcement' && d.msg){
     showAnnouncement(String(d.msg).slice(0, 150));
   }
@@ -224,6 +249,7 @@ function onData(d){
   else if(d.type === 'kicked'){
     $('claim-btn').disabled = true;
     $('claim-btn').textContent = '🚫 गेम से बाहर';
+    kickedOut = true;
     setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खेल सकते हैं।');
     toast('🚫 आप इस गेम से बाहर कर दिए गए हैं');
   }
@@ -231,7 +257,23 @@ function onData(d){
 }
 
 function onClaimResult(d){
-  if(d.ok && d.prize === 'full' && d.name){
+  if(d.ok && d.prize && d.prize !== 'full' && d.name){
+    /* जल्दी पाँच / चार कोन / लाइन का विजेता — गेम जारी रहेगा */
+    roundWinners[d.prize] = d.name;
+    if(d.name === myName){
+      myClaimedRounds[d.prize] = true;
+      claimed = false;
+      confettiBurst();
+      if(!muted) beep(1150, 0.4);
+      toast('🏅 बधाई! आपने ' + (PRIZE_LABELS[d.prize] || '') + ' जीता!');
+      setGStatus('🏅 आपने ' + (PRIZE_LABELS[d.prize] || '') + ' जीता! गेम जारी — अगले प्राइज़ की प्रतीक्षा…');
+    }else{
+      toast('🏅 ' + (PRIZE_LABELS[d.prize] || '') + ' विजेता: ' + d.name);
+      setGStatus('🏅 ' + (PRIZE_LABELS[d.prize] || '') + ' विजेता: ' + d.name + ' — गेम जारी');
+    }
+    updateClaimBtn();
+  }
+  else if(d.ok && d.prize === 'full' && d.name){
     winner = d.name;
     $('claim-btn').disabled = true;
     $('winner-name').textContent = d.name;
@@ -267,17 +309,47 @@ function onClaimResult(d){
       /* 3 गलत क्लेम = गेम से बाहर */
       $('claim-btn').disabled = true;
       $('claim-btn').textContent = '🚫 3 गलत क्लेम — गेम से बाहर';
-      setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खेल सकते हैं।');
+      kickedOut = true;
+      setGStatus('⚠️ आपने 3 बार गलत क्लेम किया। आप इस गेम से बाहर हैं। अगले गेम में खे�ल सकते हैं।');
       toast('🚫 3 गलत क्लेम — आप इस गेम से बाहर हैं');
       try{ conn.send({ type:'kick', reason:'3 गलत क्लेम' }); }catch(e){}
       return;
     }
     claimed = false;
-    if(markedSet.size === JT_CONFIG.TICKET_CELLS) $('claim-btn').disabled = false;
+    updateClaimBtn();
   }
 }
 $('winner-big-close').addEventListener('click', function(){ $('winner-big').classList.remove('show'); });
 $('go-close').addEventListener('click', function(){ $('game-over').classList.remove('show'); });
+
+/* ==================== प्राइज़ (v5.6) ==================== */
+function prizeEligible(){
+  const mk = function(i){ return !!myTicket[i] && markedSet.has(myTicket[i]); };
+  if(myTicket.length === JT_CONFIG.TICKET_CELLS &&
+     myTicket.every(function(w){ return markedSet.has(w); })) return 'full';
+  if(myPrizes.line){
+    for(let r = 0; r < 3; r++){
+      if(mk(r*4) && mk(r*4+1) && mk(r*4+2) && mk(r*4+3)) return 'line';
+    }
+  }
+  if(myPrizes.corner && mk(0) && mk(3) && mk(8) && mk(11)) return 'corner';
+  if(myPrizes.jp && markedSet.size >= 5) return 'jp';
+  return null;
+}
+function updateClaimBtn(){
+  const btn = $('claim-btn');
+  if(!btn) return;
+  if(kickedOut){ btn.disabled = true; btn.textContent = '🚫 3 गलत क्लेम — गेम से बाहर'; return; }
+  if(winner || claimed){ btn.disabled = true; return; }
+  const p = prizeEligible();
+  if(p && !roundWinners[p] && !myClaimedRounds[p]){
+    btn.disabled = false;
+    btn.textContent = '🏆 Claim — ' + (PRIZE_LABELS[p] || '') + ' पूरी! अब दबाएँ';
+  }else{
+    btn.disabled = true;
+    btn.textContent = '🏆 Claim — प्राइज़ पूरा होने पर यह बटन खुद चालू होगा';
+  }
+}
 
 /* ==================== जुड़ना ==================== */
 function join(){
@@ -315,20 +387,21 @@ $('join-btn').addEventListener('click', join);
 $('name-input').addEventListener('keydown', function(e){ if(e.key === 'Enter') join(); });
 $('room-input').addEventListener('keydown', function(e){ if(e.key === 'Enter') join(); });
 $('claim-btn').addEventListener('click', function(){
-  if(claimed || winner) return;
-  if(markedSet.size !== JT_CONFIG.TICKET_CELLS) return;
+  if(claimed || winner || kickedOut) return;
+  const prize = prizeEligible();
+  if(!prize || roundWinners[prize] || myClaimedRounds[prize]) return;
   claimed = true;
   $('claim-btn').disabled = true;
   try{
     conn.send({
       type:'claim',
-      prize:'full',
+      prize: prize,
       name:myName,
       ticket:myTicket,
       marks:Array.from(markedSet)
     });
   }catch(e){}
-  setGStatus('क्लेम भेजा गया (फुल हाउस) — विजेता की घोषणा की प्रतीक्षा…');
+  setGStatus('क्लेम भेजा गया (' + (PRIZE_LABELS[prize] || 'फुल हाउस') + ') — विजेता की घोषणा की प्रतीक्षा…');
 });
 $('mute-btn').addEventListener('click', function(){
   muted = !muted;
