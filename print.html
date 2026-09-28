@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>प्रिंट सेंटर — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला — ऑफ़लाइन के लिए टिकट और पर्ची प्रिंट करें">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#e65100">
+<link rel="stylesheet" href="./css/style.css">
+<style>
+.pp-tabs{display:flex;gap:8px;margin:12px 0}
+.pp-tab{flex:1;padding:12px 8px;border:2px solid #ffcc80;border-radius:12px;background:#fff;font-weight:800;color:#e65100;font-family:inherit;font-size:.9rem}
+.pp-tab.on{background:#e65100;color:#fff;border-color:#e65100}
+.pp-controls{background:#fff8ef;border:1.5px solid #ffe0b2;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
+.pp-controls b{display:block;margin-bottom:8px;color:#4e342e}
+.pp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.pp-num{width:80px;padding:10px;border:1.5px solid #ffcc80;border-radius:10px;font-size:1.1rem;font-weight:800;text-align:center;background:#fffdf7;color:#3e2723}
+.pp-check{font-weight:700;color:#4e342e;font-size:.9rem}
+/* ---- टिकट शीट ---- */
+.tickets-page{padding:4mm}
+.pt-ticket{border:1.5px solid #333;border-radius:8px;padding:3.5mm;page-break-inside:avoid;background:#fff}
+.pt-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #999;padding-bottom:1.5mm;margin-bottom:2.5mm;font-weight:800}
+.pt-head .h{font-size:.95em}
+.pt-head .s{font-size:.75em;color:#555}
+.pt-name{border-bottom:1px dotted #666;min-height:8mm;margin:1.5mm 0 2.5mm;font-size:.7em;color:#888}
+.pt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm}
+.pt-cell{border:1px solid #555;border-radius:4px;min-height:15mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1mm}
+.pt-cell .n{font-size:.6em;color:#777;font-weight:700;margin-bottom:.5mm}
+.pt-cell .w{font-size:.95em;font-weight:800;color:#222;line-height:1.15}
+.pt-foot{font-size:.55em;text-align:center;color:#777;margin-top:2mm}
+/* ---- पर्ची शीट ---- */
+.chit-page{padding:4mm}
+.chit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2.5mm}
+.chit{border:1.5px dashed #444;border-radius:5px;min-height:17mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1mm;page-break-inside:avoid;background:#fff}
+.chit .n{font-size:1.15em;font-weight:900;color:#b71c1c}
+.chit .w{font-size:.8em;font-weight:700;color:#222;margin-top:.5mm}
+@media print{
+  .noprint{display:none !important}
+  body{background:#fff !important}
+  .wrap{max-width:none;padding:0;margin:0}
+  .tickets-page,.chit-page{padding:0}
+  @page{size:A4;margin:8mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar noprint">
+    <div class="brand">॥ जैन ताम्बोला ॥</div>
+    <a href="./index.html">होम</a>
+  </div>
+
+  <div class="card noprint" style="text-align:center">
+    <img src="./icons/logo.jpg" alt="जैन ताम्बोला" style="width:80px;height:80px;border-radius:50%;object-fit:cover">
+    <h2 style="font-size:1.2rem;margin:10px 0 4px">🖨 प्रिंट सेंटर — टिकट व पर्ची</h2>
+    <p class="muted" style="margin:0 0 10px">ऑफ़लाइन ताम्बोला के लिए — एक बार प्रिंट, हर साल इस्तेमाल</p>
+    <div class="pp-tabs">
+      <button class="pp-tab on" id="tab-tickets" type="button">🎟 टिकट</button>
+      <button class="pp-tab" id="tab-chits" type="button">📜 पर्ची शीट</button>
+    </div>
+
+    <div id="panel-tickets" class="pp-controls">
+      <b>🎟 कागज़ पर टिकट छापें (12 खंड, डिजिटल टिकट जैसी)</b>
+      <div class="pp-row">
+        कितनी टिकटें:
+        <input type="number" id="t-count" class="pp-num" value="20" min="1" max="200" inputmode="numeric">
+        <button class="btn small" id="t-gen" type="button">🔄 नई टिकटें बनाएँ</button>
+      </div>
+      <div class="pp-row"><span class="muted">हर टिकट अलग-अलग शब्दों के साथ बनती है। नाम लिखने की जगह खाली रहती है।</span></div>
+    </div>
+
+    <div id="panel-chits" class="pp-controls" style="display:none">
+      <b>📜 पर्ची शीट — हर साल हाथ से लिखना बंद!</b>
+      <div class="pp-row">
+        <label class="pp-check"><input type="checkbox" id="c-num"> 🔢 सिर्फ क्रमांक छापें (शब्द नहीं — तह करने पर भी शब्द नहीं दिखेगा)</label>
+      </div>
+      <div class="pp-row"><span class="muted">काटें → तह करें → बाउल में डालें। सलाह: माउंट पेपर पर छपवाएँ या लैमिनेट करा लें — पूरे साल चलेगी।</span></div>
+    </div>
+
+    <button class="btn green" id="print-btn" type="button" style="width:100%">🖨 प्रिंट करें / PDF बनाएँ</button>
+    <p class="muted" style="margin-top:8px">प्रिंट विकल्प में "Save as PDF" चुनकर PDF बनाकर दुकान से छपवा भी सकते हैं।</p>
+  </div>
+
+  <div id="print-area"></div>
+  <p class="muted noprint" style="text-align:center;margin-top:10px">॥ वंदे श्री गुरू तारणम् ॥</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="./js/config.js"></script>
+<script src="./js/words.js"></script>
+<script src="./js/pwa.js"></script>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"'); }
+  function shuffle(a){
+    for(var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function toast(m){ var t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+
+  var mode = 'tickets';
+
+  /* ---------- टिकट बनाना ---------- */
+  function ticketHTML(serial){
+    var words = shuffle(SHABD_LIST.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
+    var cells = '';
+    words.forEach(function(w){
+      cells += '<div class="pt-cell"><span class="n">क्र. ' + shabdNumber(w) + '</span><span class="w">' + esc(w) + '</span></div>';
+    });
+    return '<div class="pt-ticket">' +
+      '<div class="pt-head"><span class="h">॥ जैन ताम्बोला ॥</span><span class="s">टिकट #' + serial + '</span></div>' +
+      '<div class="pt-name">नाम: ____________________</div>' +
+      '<div class="pt-grid">' + cells + '</div>' +
+      '<div class="pt-foot">Designed by Himanshu Jain (7747957576) • ॥ वंदे श्री गुरू तारणम् ॥</div>' +
+      '</div>';
+  }
+  function genTickets(){
+    var n = parseInt($('t-count').value, 10);
+    if(isNaN(n) || n < 1) n = 1;
+    if(n > 200) n = 200;
+    $('t-count').value = n;
+    var html = '', per = 4; /* प्रति A4 पेज 4 टिकट (2x2) */
+    /* छोटी स्क्रीन पर भी 2 कॉलम दिखें */
+    for(var i = 0; i < n; i += per){
+      html += '<div class="tickets-page" style="display:grid;grid-template-columns:1fr 1fr;gap:4mm">';
+      for(var k = i; k < Math.min(i + per, n); k++){
+        html += ticketHTML(k + 1);
+      }
+      html += '</div>';
+    }
+    $('print-area').innerHTML = html;
+    toast('🎟 ' + n + ' टिकटें तैयार — प्रिंट करें बटन दबाएँ');
+  }
+
+  /* ---------- पर्ची बनाना ---------- */
+  function genChits(){
+    var numOnly = $('c-num').checked;
+    var html = '<div class="chit-page"><div class="chit-grid">';
+    SHABD_LIST.forEach(function(w, i){
+      html += '<div class="chit"><span class="n">' + (i + 1) + '</span>' +
+        (numOnly ? '' : '<span class="w">' + esc(w) + '</span>') + '</div>';
+    });
+    html += '</div></div>';
+    $('print-area').innerHTML = html;
+    toast('📜 ' + SHABD_LIST.length + ' पर्ची तैयार');
+  }
+
+  /* ---------- टैब ---------- */
+  function setMode(m){
+    mode = m;
+    $('tab-tickets').classList.toggle('on', m === 'tickets');
+    $('tab-chits').classList.toggle('on', m === 'chits');
+    $('panel-tickets').style.display = (m === 'tickets') ? 'block' : 'none';
+    $('panel-chits').style.display = (m === 'chits') ? 'block' : 'none';
+    if(m === 'tickets') genTickets(); else genChits();
+  }
+  $('tab-tickets').addEventListener('click', function(){ setMode('tickets'); });
+  $('tab-chits').addEventListener('click', function(){ setMode('chits'); });
+  $('t-gen').addEventListener('click', genTickets);
+  $('c-num').addEventListener('change', genChits);
+  $('print-btn').addEventListener('click', function(){
+    if(!SHABD_LIST || SHABD_LIST.length < 13){ toast('⚠️ शब्ड सूची में कम शब्द हैं'); return; }
+    try{ window.print(); }catch(e){}
+  });
+
+  if(SHABD_LIST && SHABD_LIST.length) genTickets();
+})();
+</script>
+</body>
+</html>
