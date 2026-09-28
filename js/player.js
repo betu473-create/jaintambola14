@@ -1,7 +1,8 @@
 /* ============================================================
    जैन ताम्बोला — खिलाड़ी स्क्रीन लॉजिक v8
    फीचर्स: चैट, रिपीट(1बार), एनाउंसमेंट, विजेता सेलिब्रेशन,
-   प्राइज़ राउंड (जल्दी पाँच / चार कोन / फुल हाउस)
+   प्राइज़ राउंड (जल्दी पाँच / चार कोन / फुल हाउस),
+   नंबर + शब्द दोनों सुनाना (v5.6.3)
    ============================================================ */
 const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
@@ -10,6 +11,7 @@ let peer = null, conn = null, myName = '', myTicket = [];
 const drawnSet = new Set(), markedSet = new Set();
 let muted = false, claimed = false, winner = null;
 let lastWord = null;
+let lastNum = 0;      /* आख़िरी बोला गया क्रमांक (रिपीट के लिए) */
 let wrongClaims = 0;   /* गलत क्लेम की गिनती (3 पर गेम से बाहर) */
 const repeatUsed = new Set();
 const PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
@@ -135,6 +137,7 @@ function tap(w, el){
     toast('🏆 फुल हाउस! अब Claim बटन दबाएँ');
   }
 }
+
 function updateProgress(){
   $('progress').textContent = markedSet.size + ' / ' + JT_CONFIG.TICKET_CELLS + ' शब्द पूरे';
 }
@@ -153,27 +156,32 @@ $('repeat-btn').addEventListener('click', function(){
   repeatUsed.add(lastWord);
   $('repeat-btn').disabled = true;
   beep(880, 0.3);
-  speakWord(lastWord, JT_CONFIG.SPEAK_TIMES);
+  try{ speakWord(announcePhrase(lastNum, lastWord), JT_CONFIG.SPEAK_TIMES); }
+  catch(e){ speakWord(lastWord, JT_CONFIG.SPEAK_TIMES); }
   toast('🔁 शब्द दोबारा बोला जा रहा है (सिर्फ 1 बार)');
 });
 
 /* ==================== होस्ट के संदेश ==================== */
-function onWord(w){
+function onWord(w, num){
   if(!w) return;
   drawnSet.add(w);
   lastWord = w;
+  lastNum = num || 0;
   repeatUsed.delete(w);   /* नया शब्द आया तो उसका रिपीट उपलब्ध */
-  if(!muted){ beep(880, 0.3); speakWord(w); }
+  if(!muted){
+    beep(880, 0.3);
+    try{ speakWord(announcePhrase(num, w)); }catch(e){ speakWord(w); }
+  }
   const cell = cellMap[w];
   if(cell) cell.classList.add('came');
-  setGStatus('📢 शब्द आया: ' + w + (cell ? ' — यह आपकी टिकट में है, तुरंत टैप करें!' : ''));
+  setGStatus('📢 शब्द आया (क्र. ' + (num || '—') + '): ' + w + (cell ? ' — यह आपकी टिकट में है, तुरंत टैप करें!' : ''));
   updateRepeatBtn();
   updateClaimBtn();
 }
 
 function resetLocal(){
   drawnSet.clear(); markedSet.clear();
-  claimed = false; winner = null; lastWord = null;
+  claimed = false; winner = null; lastWord = null; lastNum = 0;
   wrongClaims = 0;
   roundWinners = {}; myClaimedRounds = {}; kickedOut = false;
   repeatUsed.clear();
@@ -214,7 +222,7 @@ function onData(d){
     saveTicketLocal(rc, myTicket, myName);
     setGStatus('🎟 आपकी डिजिटल टिकट तैयार! जैसे ही शब्द आए और वह टिकट में हो, तुरंत टैप करें');
   }
-  else if(d.type === 'word'){ onWord(d.word); }
+  else if(d.type === 'word'){ onWord(d.word, d.num); }
   else if(d.type === 'reset'){ resetLocal(); }
   else if(d.type === 'prizes'){
     if(d.prizes && typeof d.prizes === 'object'){
