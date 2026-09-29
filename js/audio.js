@@ -58,12 +58,22 @@ if('speechSynthesis' in window){
   }, 5000);
 }
 
+/* फ़ॉलबैक (v5.6.12): फोन में हिंदी TTS आवाज़ न हो तो इंटरनेट से बोलो —
+   (Google Translate की Hindi आवाज़) — किसी सेटिंग की ज़रूरत नहीं */
+function speakNet(text){
+  try{
+    const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=hi&q=' + encodeURIComponent(String(text || '').slice(0, 180)));
+    a.play().catch(function(){ /* नेट भी न हो तो चुपचाप */ });
+  }catch(e){}
+}
+
 /* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है।
-   अगर इंजन शब्द बीच में छोड़ दे तो एक बार दोबारा कोशिश करता है। */
-function speakWord(word, times, _isRetry){
-  if(!('speechSynthesis' in window)) return;
+   फ़ोन की आवाज़ अटके/न मिले तो इंटरनेट वाली आवाज़ खुद बोल देती है। */
+function speakWord(word, times){
+  if(!('speechSynthesis' in window)){ speakNet(word); return; }
   const n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
   try{ window.speechSynthesis.cancel(); }catch(e){}
+  let started = false, done = false;
   for(let i = 0; i < n; i++){
     const u = new SpeechSynthesisUtterance(String(word || '').trim());
     u.lang   = (window.JT_CONFIG && JT_CONFIG.SPEAK_LANG) || 'hi-IN';
@@ -71,15 +81,23 @@ function speakWord(word, times, _isRetry){
     u.pitch  = 1;
     u.volume = 1;
     if(_hiVoice) u.voice = _hiVoice;
-    /* शब्द अटक/छूट जाए तो एक बार दोबारा — लेकिन रुकावट-वाले
-       cancel को ग़लती न समझें */
+    u.onstart = function(){ started = true; };
+    /* आवाज़ न मिले/अटके तो इंटरनेट से बोलो (v5.6.12) */
     u.onerror = function(ev){
-      if(_isRetry) return;
       if(ev && (ev.error === 'interrupted' || ev.error === 'canceled')) return;
-      setTimeout(function(){ speakWord(word, 1, true); }, 450);
+      if(!done){ done = true; speakNet(word); }
     };
     window.speechSynthesis.speak(u);
   }
+  /* कुछ फोन चुपचाप नहीं बोलते (कोई error भी नहीं) —
+     1.6 सेकंड तक शुरू ही न हो तो इंटरनेट वाली आवाज़ */
+  setTimeout(function(){
+    try{
+      if(!started && !done && !window.speechSynthesis.speaking && !window.speechSynthesis.pending){
+        done = true; speakNet(word);
+      }
+    }catch(e){}
+  }, 1600);
 }
 
 function stopSpeaking(){
