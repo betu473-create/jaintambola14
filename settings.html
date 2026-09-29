@@ -24,10 +24,18 @@
 </head>
 <body>
 <script>
-/* होस्ट-लॉक (v5.6.6): यह पेज सिर्फ़ वही खोल सकता है जिसने सही PIN डाला हो */
+/* होस्ट-लॉक (v5.6.8): सही PIN डाला हो + लॉगिन पुराना न हुआ हो — वरना होम भेज दो */
 (function(){
   var ok = false;
-  try{ ok = localStorage.getItem('jt-host-ok') === '1'; }catch(e){}
+  try{
+    ok = localStorage.getItem('jt-host-ok') === '1';
+    if(ok){
+      var t = parseInt(localStorage.getItem('jt-host-ok-time') || '0', 10) || 0;
+      var ttl = parseInt(localStorage.getItem('jt-host-ttl') || '0', 10);
+      if(!(ttl > 0)) ttl = 43200000; /* डिफ़ॉल्ट: 12 घंटे */
+      if(!t || (Date.now() - t) > ttl){ localStorage.removeItem('jt-host-ok'); ok = false; }
+    }
+  }catch(e){}
   if(!ok){ location.replace('./index.html'); }
 })();
 </script>
@@ -39,7 +47,17 @@
       <a href="./index.html">होम</a>
     </div>
   </div>
-  <div class="status">सभी सेटिंग्स एक जगह — व्वस्थित और आसान</div>
+  <div class="status">सभी सेटिंग्स एक जगह — व्यवस्थित और आसान</div>
+
+  <!-- लॉगिन समय (v5.6.8) -->
+  <div class="card">
+    <h2>🔒 लॉगिन कितने समय तक याद रहे</h2>
+    <label class="prize-opt"><input type="radio" name="ttl" value="1800000"> ⏱ 30 मिनट — बहुत सख़्त</label>
+    <label class="prize-opt"><input type="radio" name="ttl" value="43200000"> 🕐 12 घंटे — अनुशंसित</label>
+    <label class="prize-opt"><input type="radio" name="ttl" value="86400000"> 🕑 24 घंटे — पूरा दिन</label>
+    <label class="prize-opt"><input type="radio" name="ttl" value="9999999999999"> 📱 हमेशा — सिर्फ़ अपने भरोसेमंद फोन पर</label>
+    <p class="muted">यह सेटिंग सिर्फ़ इसी फोन के लिए है (SIM वाले फोन की तरह)। दूसरे फोन पर लॉगिन अपने-आप 12 घंटे बाद बंद हो जाता है।</p>
+  </div>
 
   <!-- प्राइज़ राउंड -->
   <div class="card">
@@ -78,7 +96,7 @@
   <!-- ऐप जानकारी -->
   <div class="card">
     <h2>ℹ️ ऐप के बारे में</h2>
-    <div class="sw-row"><span>संस्करण</span><span style="color:#e65100">v5.6</span></div>
+    <div class="sw-row"><span>संस्करण</span><span style="color:#e65100">v5.6.8</span></div>
     <div class="sw-row"><span>इंटरनेट लगा हो तो ऑनलाइन गेम</span><span style="color:#2e7d32">✓</span></div>
     <div class="sw-row"><span>इंस्टॉल के बाद ऑफ़लाइन भी चलती है (PWA)</span><span style="color:#2e7d32">✓</span></div>
     <div class="sw-row"><span>एक फोन = एक ही लाइव डिजिटल टिकट</span><span style="color:#2e7d32">✓</span></div>
@@ -114,6 +132,24 @@
       });
     }
   });
+
+  /* लॉगिन समय (v5.6.8) */
+  var savedTtl = 0;
+  try{ savedTtl = parseInt(localStorage.getItem('jt-host-ttl') || '0', 10); }catch(e){}
+  if(!(savedTtl > 0)) savedTtl = 43200000;
+  var radios = document.querySelectorAll('input[name="ttl"]');
+  for(var i = 0; i < radios.length; i++){
+    (function(r){
+      if(parseInt(r.value, 10) === savedTtl) r.checked = true;
+      r.addEventListener('change', function(){
+        if(r.checked){
+          try{ localStorage.setItem('jt-host-ttl', r.value); }catch(e2){}
+          var t = $('saved-toast');
+          if(t){ t.textContent = '✅ लॉगिन समय सेव हो गया'; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+        }
+      });
+    })(radios[i]);
+  }
 })();
 </script>
 <div class="toast" id="saved-toast"></div>
