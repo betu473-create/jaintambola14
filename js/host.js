@@ -950,65 +950,11 @@ function showWinnerPhotoOnHost(name, label, dataUrl){
   }catch(e){}
   toast('📸 ' + name + ' की फोटो आ गई — सबकी स्क्रीन पर दिख रही है');
 }
-function offerWinnerPhoto(name, label){
-  const card = $('winner-photo-card');
-  if(!card) return;
-  $('wp-name').textContent = name + ' (' + label + ')';
-  $('wp-img').style.display = 'none';
-  $('wp-img').removeAttribute('src');
-  $('wp-share').style.display = 'none';
-  wpFile = null;
-  card.dataset.name = name;
-  card.dataset.label = label;
-  card.style.display = 'block';
-}
-$('wp-take').addEventListener('click', function(){ $('wp-file').click(); });
-$('wp-file').addEventListener('change', function(e){
-  const f = e.target.files && e.target.files[0];
-  if(!f) return;
-  const name = $('winner-photo-card').dataset.name || '';
-  const label = $('winner-photo-card').dataset.label || '';
-  const img = new Image();
-  img.onload = function(){
-    const W = 800;
-    const H = Math.max(1, Math.round(img.height * W / img.width));
-    const c = document.createElement('canvas');
-    c.width = W;
-    c.height = H + 100;
-    const x = c.getContext('2d');
-    x.fillStyle = '#fff';
-    x.fillRect(0, 0, c.width, c.height);
-    x.drawImage(img, 0, 0, W, H);
-    x.fillStyle = '#b71c1c';
-    x.fillRect(0, H, W, 100);
-    x.fillStyle = '#fff';
-    x.font = 'bold 38px sans-serif';
-    x.textAlign = 'center';
-    x.textBaseline = 'middle';
-    x.fillText('🏆 ' + name + ' — ' + label, W / 2, H + 50);
-    URL.revokeObjectURL(img.src);
-    c.toBlob(function(blob){
-      if(!blob){ toast('⚠️ फोटो बन नहीं पाई'); return; }
-      wpFile = new File([blob], 'winner.jpg', { type:'image/jpeg' });
-      $('wp-img').src = URL.createObjectURL(blob);
-      $('wp-img').style.display = 'block';
-      $('wp-share').style.display = 'inline-block';
-      toast('📸 फोटो तैयार — सबको भेज दी गई');
-      try{
-        const rd = new FileReader();
-        rd.onload = function(){
-          try{ broadcast({ type:'winner-photo', name:name, prize:'full', label:label, img:rd.result }); }catch(e2){}
-        };
-        rd.readAsDataURL(blob);
-      }catch(e2){}
-    }, 'image/jpeg', 0.9);
-  };
-  img.onerror = function(){ toast('⚠️ यह फोटो नहीं खुली — दोबारा कोशिश करें'); };
-  img.src = URL.createObjectURL(f);
-  e.target.value = '';
-});
+/* v5.6.14: होस्ट पर फोटो लेने का विकल्प हटा दिया — फोटो सिर्फ विजेता (खिलाड़ी) के फोन से आती है */
+function offerWinnerPhoto(name, label){ return; }
+
 $('wp-share').addEventListener('click', function(){
-  if(!wpFile){ toast('पहले 📷 से फोटो लें'); return; }
+  if(!wpFile){ toast('फोटो अभी नहीं आई'); return; }
   const name = $('winner-photo-card').dataset.name || '';
   const label = $('winner-photo-card').dataset.label || '';
   const txt = '🏆 ' + name + ' — ' + label + ' विजेता! ॥ जैन ताम्बोला ॥';
