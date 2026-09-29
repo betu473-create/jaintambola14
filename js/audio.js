@@ -62,6 +62,7 @@ if('speechSynthesis' in window){
    (Google Translate की Hindi आवाज़) — किसी सेटिंग की ज़रूरत नहीं */
 function speakNet(text){
   try{
+    try{ if(typeof toast === 'function') toast('🌐 आवाज़ इंटरनेट से बोल रही है…'); }catch(e2){}
     const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=hi&q=' + encodeURIComponent(String(text || '').slice(0, 180)));
     a.play().catch(function(){ /* नेट भी न हो तो चुपचाप */ });
   }catch(e){}
@@ -70,7 +71,11 @@ function speakNet(text){
 /* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है।
    फ़ोन की आवाज़ अटके/न मिले तो इंटरनेट वाली आवाज़ खुद बोल देती है। */
 function speakWord(word, times){
-  if(!('speechSynthesis' in window)){ speakNet(word); return; }
+  const txt = String(word || '').trim();
+  if(!txt) return;
+  /* फोन में हिंदी आवाज़ मिली ही नहीं — सीधे इंटरनेट वाली आवाज़
+     (v5.6.13: कुछ फोन चुपचाप कुछ नहीं बोलते — उनके लिए यही सही) */
+  if(!('speechSynthesis' in window) || !_hiVoice){ speakNet(txt); return; }
   const n = times || (window.JT_CONFIG ? JT_CONFIG.SPEAK_TIMES : 1);
   try{ window.speechSynthesis.cancel(); }catch(e){}
   let started = false, done = false;
