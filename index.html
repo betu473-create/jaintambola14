@@ -42,7 +42,7 @@
   <!-- होस्ट PIN लॉक (v5.6.6) -->
   <div class="card" id="pin-card" style="display:none;text-align:center">
     <h2 style="font-size:1.1rem;margin:0 0 6px">🔒 होस्ट स्क्रीन लॉक है</h2>
-    <p class="muted" style="margin:0 0 10px;font-size:.9rem">यह स्क्रीन सिर्फ़ होस्ट (Himanshu Jain) के लिए है। 4 अंकों का PIN डालें।</p>
+    <p class="muted" style="margin:0 0 10px;font-size:.9rem">यह स्क्रीन सिर्फ़ होस्ट (Himanshu Jain) के लिए है। 4 अंकों का PIN डालें। (5 गलत कोशिशों पर 30 मिनट बंद रहेगा)</p>
     <input class="txt" id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off" style="text-align:center;letter-spacing:6px;font-size:1.2rem">
     <button class="btn" id="pin-ok" type="button">खोलें 🔓</button>
     <p class="muted" id="pin-msg" style="display:none;color:#c62828;margin:8px 0 0;font-size:.9rem">गलत PIN — दोबारा कोशिश करें</p>
@@ -55,7 +55,7 @@
     </p>
   </div>
 
-  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.6</span></div>
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.7</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
 <script src="./js/pwa.js"></script>
@@ -78,6 +78,10 @@
 
     /* होस्ट बटन: पहले PIN (v5.6.6) — सही PIN पर यह फोन 'खुला' याद रहता है */
     var HOST_PIN_HASH = 'f898c0e2fa3b9767f4e8e8e98c4a29bb98664b2a6f7b9e67129aa90915ed8a4a';
+    var PIN_MAX_TRIES = 5, PIN_LOCK_MS = 30 * 60 * 1000; /* 5 गलत PIN = 30 मिनट बंद (v5.6.7) */
+    function _pinFails(){ try{ return parseInt(localStorage.getItem('jt-pin-fail') || '0', 10) || 0; }catch(e){ return 0; } }
+    function _pinLockUntil(){ try{ return parseInt(localStorage.getItem('jt-pin-lock') || '0', 10) || 0; }catch(e){ return 0; } }
+    function _pinLocked(){ return Date.now() < _pinLockUntil(); }
     hostBtn.addEventListener('click', function(e){
       var unlocked = false;
       try{ unlocked = localStorage.getItem('jt-host-ok') === '1'; }catch(err){}
@@ -85,9 +89,22 @@
       e.preventDefault();
       var pc = document.getElementById('pin-card');
       if(!pc) return;
+      var msg = document.getElementById('pin-msg');
+      var inp = document.getElementById('pin-input');
+      var okb = document.getElementById('pin-ok');
+      if(_pinLocked()){
+        var mins = Math.ceil((_pinLockUntil() - Date.now()) / 60000);
+        if(msg){ msg.textContent = '⏳ बहुत बार गलत PIN — ' + mins + ' मिनट बाद कोशिश करें'; msg.style.display = 'block'; }
+        if(inp){ inp.disabled = true; inp.value = ''; }
+        if(okb){ okb.disabled = true; }
+      }else{
+        if(inp){ inp.disabled = false; inp.value = ''; }
+        if(okb){ okb.disabled = false; }
+        if(msg){ msg.style.display = 'none'; }
+      }
       pc.style.display = 'block';
       try{ pc.scrollIntoView({behavior:'smooth', block:'center'}); }catch(err3){}
-      setTimeout(function(){ try{ document.getElementById('pin-input').focus(); }catch(err4){} }, 350);
+      setTimeout(function(){ try{ if(inp && !inp.disabled) inp.focus(); }catch(err4){} }, 350);
     });
 
     function _sha256hex(s){
@@ -106,12 +123,24 @@
       if(!v) return;
       _sha256hex(v).then(function(h){
         if(h && h === HOST_PIN_HASH){
-          try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-role','host'); }catch(e){}
+          try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-role','host');
+               localStorage.removeItem('jt-pin-fail'); localStorage.removeItem('jt-pin-lock'); }catch(e){}
           location.href = './host.html';
         }else{
-          document.getElementById('pin-msg').style.display = 'block';
-          inp.value = '';
-          try{ inp.focus(); }catch(e){}
+          var fails = _pinFails() + 1;
+          try{ localStorage.setItem('jt-pin-fail', String(fails)); }catch(e2){}
+          var msg = document.getElementById('pin-msg');
+          if(fails >= PIN_MAX_TRIES){
+            try{ localStorage.setItem('jt-pin-lock', String(Date.now() + PIN_LOCK_MS)); }catch(e3){}
+            if(msg){ msg.textContent = '⏳ बहुत बार गलत PIN — 30 मिनट के लिए बंद'; msg.style.display = 'block'; }
+            if(inp){ inp.disabled = true; inp.value = ''; }
+            var okb = document.getElementById('pin-ok');
+            if(okb){ okb.disabled = true; }
+          }else{
+            if(msg){ msg.textContent = 'गलत PIN — दोबारा कोशिश करें (' + fails + '/' + PIN_MAX_TRIES + ')'; msg.style.display = 'block'; }
+            inp.value = '';
+            try{ inp.focus(); }catch(e4){}
+          }
         }
       });
     }
