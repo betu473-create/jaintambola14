@@ -39,6 +39,14 @@ html,body{background:#111;color:#fff;margin:0;padding:0}
 </style>
 </head>
 <body>
+<script>
+/* होस्ट-लॉक (v5.6.6): यह पेज सिर्फ़ वही खोल सकता है जिसने सही PIN डाला हो */
+(function(){
+  var ok = false;
+  try{ ok = localStorage.getItem('jt-host-ok') === '1'; }catch(e){}
+  if(!ok){ location.replace('./index.html'); }
+})();
+</script>
 
 <!-- जुड़ने वाला कार्ड -->
 <div class="sc-wrap" id="sc-join">
