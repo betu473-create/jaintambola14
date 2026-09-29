@@ -80,6 +80,12 @@ function jtUnlockWords(pass){
 }
 
 /* लॉक बैनर — खिलाड़ी (join) वाले पेज पर नहीं दिखेगा */
+/* पासवर्ड के 5 गलत प्रयास = 30 मिनट बंद (v5.6.10 — PIN जैसा ही नियम) */
+const JT_WP_MAX = 5, JT_WP_LOCK_MS = 30 * 60 * 1000;
+function _wpFails(){ try{ return parseInt(localStorage.getItem('jt-wp-fail') || '0', 10) || 0; }catch(e){ return 0; } }
+function _wpLockUntil(){ try{ return parseInt(localStorage.getItem('jt-wp-lock') || '0', 10) || 0; }catch(e){ return 0; } }
+function _wpLocked(){ return Date.now() < _wpLockUntil(); }
+
 function _jtShowLockBanner(){
   try{
     if(!jtWordsLocked()) return;
@@ -88,7 +94,7 @@ function _jtShowLockBanner(){
     d.id = 'jt-words-lock';
     d.style.cssText = 'background:#fff;border:2px solid #ff6f00;border-radius:14px;padding:14px 16px;margin:12px 0;text-align:center';
     d.innerHTML = '<div style="font-weight:800;color:#bf360c;font-size:1.05rem">🔒 शब्द सूची लॉक है</div>' +
-      '<div style="font-size:.9rem;color:#8d6e63;margin:4px 0 10px">गुप्त पासवर्ड डालें — सूची इसी फोन में खुलकर सेव हो जाएगी</div>' +
+      '<div style="font-size:.9rem;color:#8d6e63;margin:4px 0 10px">गुप्त पासवर्ड डालें — सूची इसी फोन में खुलकर सेव हो जाएगी (5 गलत कोशिशों पर 30 मिनट बंद रहेगा)</div>' +
       '<input type="password" id="jt-words-pass" placeholder="पासवर्ड" autocomplete="off" ' +
       'style="text-align:center;font-size:1.05rem;padding:8px;border:1.5px solid #ffe0b2;border-radius:10px;width:70%;max-width:240px">' +
       '<button type="button" id="jt-words-open" style="display:block;margin:10px auto 0;padding:8px 22px;background:#e65100;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem">🔓 खोलें</button>' +
@@ -97,16 +103,35 @@ function _jtShowLockBanner(){
     const btn = document.getElementById('jt-words-open');
     const inp = document.getElementById('jt-words-pass');
     const msg = document.getElementById('jt-words-msg');
+    if(_wpLocked()){
+      const mins = Math.ceil((_wpLockUntil() - Date.now()) / 60000);
+      if(msg){ msg.textContent = '⏳ बहुत बार गलत पासवर्ड — ' + mins + ' मिनट बाद कोशिश करें'; msg.style.display = 'block'; }
+      if(inp){ inp.disabled = true; }
+      if(btn){ btn.disabled = true; }
+    }else if(_wpLockUntil() > 0 && Date.now() >= _wpLockUntil()){
+      try{ localStorage.removeItem('jt-wp-lock'); localStorage.removeItem('jt-wp-fail'); }catch(e){}
+    }
     function tryUnlock(){
       const v = (inp && inp.value ? String(inp.value) : '').trim();
       if(!v) return;
+      if(_wpLocked()) return;
       jtUnlockWords(v).then(function(arr){
-        try{ localStorage.setItem('jt_words_unlocked', JSON.stringify(arr)); }catch(e){}
+        try{ localStorage.setItem('jt_words_unlocked', JSON.stringify(arr));
+             localStorage.removeItem('jt-wp-fail'); localStorage.removeItem('jt-wp-lock'); }catch(e){}
         d.innerHTML = '<div style="font-weight:800;color:#2e7d32;font-size:1rem">✅ शब्द सूची खुल गई (' + arr.length + ' शब्द) — लोड हो रहा है…</div>';
         setTimeout(function(){ location.reload(); }, 900);
       }).catch(function(){
-        if(msg){ msg.textContent = 'गलत पासवर्ड — दोबारा कोशिश करें'; msg.style.display = 'block'; }
-        if(inp){ inp.value = ''; try{ inp.focus(); }catch(e2){} }
+        const f = _wpFails() + 1;
+        try{ localStorage.setItem('jt-wp-fail', String(f)); }catch(e3){}
+        if(f >= JT_WP_MAX){
+          try{ localStorage.setItem('jt-wp-lock', String(Date.now() + JT_WP_LOCK_MS)); }catch(e4){}
+          if(msg){ msg.textContent = '⏳ बहुत बार गलत पासवर्ड — 30 मिनट के लिए बंद'; msg.style.display = 'block'; }
+          if(inp){ inp.disabled = true; inp.value = ''; }
+          if(btn){ btn.disabled = true; }
+        }else{
+          if(msg){ msg.textContent = 'गलत पासवर्ड — दोबारा कोशिश करें (' + f + '/' + JT_WP_MAX + ')'; msg.style.display = 'block'; }
+          if(inp){ inp.value = ''; try{ inp.focus(); }catch(e2){} }
+        }
       });
     }
     if(btn) btn.addEventListener('click', tryUnlock);
