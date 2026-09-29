@@ -86,6 +86,11 @@
         <button class="btn small" id="t-gen" type="button">🔄 नई टिकटें बनाएँ</button>
       </div>
       <div class="pp-row"><span class="muted">हर टिकट अलग-अलग शब्दों के साथ बनती है। नाम लिखने की जगह खाली रहती है।</span></div>
+      <div class="pp-row" style="align-items:center">
+        <span class="muted" id="reg-info" style="flex:1">📚 रजिस्टर…</span>
+        <button class="btn small ghost" id="reg-clear" type="button" style="border-color:#e57373;color:#c62828">🗑 नई शुरुआत (#1 से)</button>
+      </div>
+      <div class="pp-row"><span class="muted">💡 टिकटें इसी फ़ोन से बनाओ — यही फ़ोन रजिस्टर याद रखता है। गेम में होस्ट स्क्रीन के क्लेम सेक्शन में "🔍 कागज़ टिकट जाँच" में नंबर डालकर तुरंत जाँच होगी।</span></div>
     </div>
 
     <div id="panel-chits" class="pp-controls" style="display:none">
@@ -123,9 +128,18 @@
 
   var mode = 'tickets';
 
+  /* ---------- रजिस्टर (कागज़ टिकट जाँच के लिए) ---------- */
+  var REG_KEY = 'jt_paper_tickets';
+  function loadReg(){ try{ return JSON.parse(localStorage.getItem(REG_KEY)) || {}; }catch(e){ return {}; } }
+  function saveReg(r){ try{ localStorage.setItem(REG_KEY, JSON.stringify(r)); }catch(e){} }
+  function nextSerial(r){ var mx = 0; Object.keys(r).forEach(function(k){ var v = parseInt(k, 10); if(!isNaN(v) && v > mx) mx = v; }); return mx + 1; }
+  function renderRegInfo(){
+    var r = loadReg(); var n = Object.keys(r).length;
+    $('reg-info').textContent = n ? ('📚 रजिस्टर में ' + n + ' टिकट सेव — नई टिकट #' + nextSerial(r) + ' से बनेगी') : '📚 रजिस्टर खाली — नई टिकट #1 से बनेगी';
+  }
+
   /* ---------- टिकट बनाना ---------- */
-  function ticketHTML(serial){
-    var words = shuffle(SHABD_LIST.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
+  function ticketHTML(serial, words){
     var cells = '';
     words.forEach(function(w){
       cells += '<div class="pt-cell"><span class="n">क्र. ' + shabdNumber(w) + '</span><span class="w">' + esc(w) + '</span></div>';
@@ -137,22 +151,35 @@
       '<div class="pt-foot">Designed by Himanshu Jain (7747957576) • ॥ वंदे श्री गुरू तारणम् ॥</div>' +
       '</div>';
   }
-  function genTickets(){
+  function genTickets(save){
     var n = parseInt($('t-count').value, 10);
     if(isNaN(n) || n < 1) n = 1;
     if(n > 200) n = 200;
     $('t-count').value = n;
+    var reg = loadReg();
+    var start = nextSerial(reg);
+    var batch = [];
     var html = '', per = 4; /* प्रति A4 पेज 4 टिकट (2x2) */
     /* छोटी स्क्रीन पर भी 2 कॉलम दिखें */
     for(var i = 0; i < n; i += per){
       html += '<div class="tickets-page" style="display:grid;grid-template-columns:1fr 1fr;gap:4mm">';
       for(var k = i; k < Math.min(i + per, n); k++){
-        html += ticketHTML(k + 1);
+        var words = shuffle(SHABD_LIST.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
+        var serial = start + k;
+        batch.push({ serial: serial, words: words });
+        html += ticketHTML(serial, words);
       }
       html += '</div>';
     }
     $('print-area').innerHTML = html;
-    toast('🎟 ' + n + ' टिकटें तैयार — प्रिंट करें बटन दबाएँ');
+    if(save){
+      batch.forEach(function(t){ reg[t.serial] = t.words; });
+      saveReg(reg);
+      renderRegInfo();
+      toast('🎟 ' + n + ' टिकटें रजिस्टर में सेव (#' + start + '–#' + (start + n - 1) + ')');
+    } else {
+      toast('🎟 ' + n + ' टिकटें तैयार (प्रीव्यू) — सेव करने के लिए नई टिकटें बनाएँ दबाएँ');
+    }
   }
 
   /* ---------- पर्ची बनाना ---------- */
@@ -179,14 +206,21 @@
   }
   $('tab-tickets').addEventListener('click', function(){ setMode('tickets'); });
   $('tab-chits').addEventListener('click', function(){ setMode('chits'); });
-  $('t-gen').addEventListener('click', genTickets);
+  $('t-gen').addEventListener('click', function(){ genTickets(true); });
+  $('reg-clear').addEventListener('click', function(){
+    if(confirm('रजिस्टर खाली करें? पुराने टिकट नंबर की जाँच बंद हो जाएगी।')){
+      try{ localStorage.removeItem(REG_KEY); }catch(e){}
+      renderRegInfo(); genTickets(false);
+    }
+  });
   $('c-num').addEventListener('change', genChits);
   $('print-btn').addEventListener('click', function(){
     if(!SHABD_LIST || SHABD_LIST.length < 13){ toast('⚠️ शब्ड सूची में कम शब्द हैं'); return; }
     try{ window.print(); }catch(e){}
   });
 
-  if(SHABD_LIST && SHABD_LIST.length) genTickets();
+  renderRegInfo();
+  if(SHABD_LIST && SHABD_LIST.length) genTickets(false);
 })();
 </script>
 </body>
