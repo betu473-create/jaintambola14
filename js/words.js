@@ -34,13 +34,16 @@ function shabdNumber(word){
    अगर उपयोगकर्ता ने शब्द जोड़े/हटाए/ठीक किए हैं तो वही
    सूची लोड होगी।
    ============================================================ */
+var jtCustomList = false;   /* v5.6.15: कस्टम सूची लगी है तो पैक-आवाज़ क्रमांक मेल नहीं खाते */
 try{
   const jtSaved = JSON.parse(localStorage.getItem('jt_word_list') || 'null');
   if(Array.isArray(jtSaved) && jtSaved.length){
     SHABD_LIST.splice(0, SHABD_LIST.length);
     jtSaved.forEach(function(w){ SHABD_LIST.push(w); });
+    jtCustomList = true;
   }
 }catch(e){}
+window.JT_PACK_OK = !jtCustomList;
 
 /* ============================================================
    लॉक खोलना (v5.6.9) — सिर्फ़ होस्ट वाले पेजों पर दिखेगा
