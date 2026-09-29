@@ -455,8 +455,57 @@ function showWord(word){
     ' • ऐप इसे हिंदी में ' + JT_CONFIG.SPEAK_TIMES + ' बार बोलेगा';
 }
 
+/* ==================== गेम खत्म करने का एक ही रास्ता (v5.6.16) ==================== */
+/* चाहे होस्ट मंज़ूरी दे, चाहे टिकट अपने आप पूरी हो — यही चलेगा */
+function gameOverNow(name, viaHost){
+  if(winnerFull) return;
+  winnerFull = name;
+  stopAuto();
+  stopTimer();
+  $('next-btn').disabled = true;
+  $('auto-btn').disabled = true;
+  const dur = gameStartTime ? $('game-timer').textContent.replace('⏱ ', '') : '';
+  saveHistory(name, drawn.length, dur);
+  addWinnerToBoard(name);
+  broadcast({ type:'claim-result', ok:true, name:name, prize:'full' });
+  setTimeout(function(){ broadcast({ type:'game-over', winner:name }); }, 3600);
+  const row = document.createElement('div');
+  row.className = 'claim-row';
+  row.style.borderLeftColor = '#2e7d32';
+  row.textContent = (viaHost ? '✅ मंज़ूर — 🏆 ' : '🎉 टिकट पूरी — अपने आप विजेता: 🏆 ') +
+    name + ' फुल हाउस (' + new Date().toLocaleTimeString('hi-IN') + ')';
+  $('claims').prepend(row);
+  $('winner-name').textContent = name;
+  $('winner-box').classList.add('show');
+  $('winner-big-name').textContent = name;
+  $('winner-big').classList.add('show');
+  confettiBurst();
+  beep(1200, 0.5);
+  /* बोर्ड साफ़ — नया शब्द बंद (v5.6.16) */
+  const el = $('current-shabd');
+  el.classList.remove('pop');
+  el.textContent = '🏆';
+  $('word-sub').textContent = 'गेम समाप्त — विजेता: ' + name + '। नया गेम: "🔄 नया गेम (रीसेट)" दबाएँ';
+  setStatus('🏆 फुल हाउस विजेता: ' + name + ' — गेम समाप्त। अगला राउंड "नया गेम" से शुरू करें।');
+  announceWinnerVoice(name, 'फुल हाउस');
+  clearHostState();
+}
+
+/* v5.6.16: हर शब्द के बाद देखो — किसी खिलाड़ी की पूरी टिकट आ गई तो गेम अपने आप खत्म */
+function checkAutoFullHouse(){
+  if(winnerFull || !started) return;
+  Object.keys(players).forEach(function(id){
+    const t = players[id] && players[id].ticket;
+    if(Array.isArray(t) && t.length === JT_CONFIG.TICKET_CELLS &&
+       t.every(function(w){ return drawnSet.has(w); })){
+      gameOverNow(players[id].name || 'खिलाड़ी', false);
+    }
+  });
+}
+
 function drawWord(){
   if(!started){ toast('पहले "गेम शुरू करें" दबाएँ'); return; }
+  if(winnerFull){ toast('🏆 गेम पूरा हो चुका — "🔄 नया गेम" दबाएँ'); return; }   /* v5.6.16 */
   if(!deck.length){ toast('सभी शब्द आ चुके हैं'); stopAuto(); return; }
   const w = deck.pop();
   const num = shabdNumber(w);
@@ -476,6 +525,7 @@ function drawWord(){
   renderChips();
   $('drawn-count').textContent = drawn.length;
   saveHostState();
+  checkAutoFullHouse();   /* v5.6.16: किसी की टिकट पूरी हुई तो गेम अपने आप खत्म */
   if(!deck.length){
     stopAuto();
     setStatus('सभी ' + (gamePool.length || SHABD_LIST.length) + ' शब्द आ चुके — क्लेम की प्रतीक्षा…');
@@ -725,32 +775,8 @@ function approveClaim(){
     saveHostState();
     return;
   }
-  winnerFull = name;
-  /* हिस्ट्री + लीडरबोर्ड */
-  const dur = gameStartTime ? $('game-timer').textContent.replace('⏱ ', '') : '';
-  saveHistory(name, drawn.length, dur);
-  addWinnerToBoard(name);
-  /* ब्रॉडकास्ट */
-  broadcast({ type:'claim-result', ok:true, name:name, prize:'full' });
-  /* गेम ओवर ब्रॉडकास्ट */
-  setTimeout(function(){ broadcast({ type:'game-over', winner:name }); }, 3600);
-  /* UI */
-  const row = document.createElement('div');
-  row.className = 'claim-row';
-  row.style.borderLeftColor = '#2e7d32';
-  row.textContent = '✅ मंज़ूर — 🏆 ' + name + ' फुल हाउस विजेता (' + new Date().toLocaleTimeString('hi-IN') + ')';
-  $('claims').prepend(row);
-  $('winner-name').textContent = name;
-  $('winner-box').classList.add('show');
-  $('winner-big-name').textContent = name;
-  $('winner-big').classList.add('show');
-  confettiBurst();
-  beep(1200, 0.5);
-  setStatus('🏆 फुल हाउस विजेता (होस्ट द्वारा मंज़ूर): ' + name + ' । होस्ट का निर्णय अंतिम।');
-  stopTimer();
-  offerWinnerPhoto(name, 'फुल हाउस');
-  announceWinnerVoice(name, 'फुल हाउस');
-  clearHostState(); /* फुल हाउस पूरा — अब वापस लाने की ज़रूरत नहीं */
+  /* v5.6.16: एक ही रास्ता — गेम खत्म, बोर्ड साफ़, नए शब्द बंद */
+  gameOverNow(name, true);
 }
 
 function rejectClaim(){
@@ -899,6 +925,7 @@ $('newgame-btn').addEventListener('click', function(){
   stopAuto(); stopTimer();
   $('game-timer').style.display = 'none';
   resetBoard();
+  try{ $('winner-photo-card').style.display = 'none'; }catch(e){}   /* v5.6.16: फोटो कार्ड भी साफ़ */
   $('next-btn').disabled = true;
   $('auto-btn').disabled = true;
   broadcast({ type:'reset' });
