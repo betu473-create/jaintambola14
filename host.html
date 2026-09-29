@@ -24,10 +24,18 @@
 </head>
 <body>
 <script>
-/* होस्ट-लॉक (v5.6.6): यह पेज सिर्फ़ वही खोल सकता है जिसने सही PIN डाला हो */
+/* होस्ट-लॉक (v5.6.8): सही PIN डाला हो + लॉगिन पुराना न हुआ हो — वरना होम भेज दो */
 (function(){
   var ok = false;
-  try{ ok = localStorage.getItem('jt-host-ok') === '1'; }catch(e){}
+  try{
+    ok = localStorage.getItem('jt-host-ok') === '1';
+    if(ok){
+      var t = parseInt(localStorage.getItem('jt-host-ok-time') || '0', 10) || 0;
+      var ttl = parseInt(localStorage.getItem('jt-host-ttl') || '0', 10);
+      if(!(ttl > 0)) ttl = 43200000; /* डिफ़ॉल्ट: 12 घंटे */
+      if(!t || (Date.now() - t) > ttl){ localStorage.removeItem('jt-host-ok'); ok = false; }
+    }
+  }catch(e){}
   if(!ok){ location.replace('./index.html'); }
 })();
 </script>
