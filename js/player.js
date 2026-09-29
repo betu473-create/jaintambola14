@@ -8,6 +8,7 @@ const ROOM_PREFIX = 'JT-';
 function $(id){ return document.getElementById(id); }
 
 let peer = null, conn = null, myName = '', myTicket = [];
+let myNums = [];      /* टिकट के शब्दों के क्रमांक — होस्ट से आते हैं (v5.6.9) */
 const drawnSet = new Set(), markedSet = new Set();
 let muted = false, claimed = false, winner = null;
 let lastWord = null;
@@ -105,7 +106,8 @@ function renderTicket(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'cell';
-    const num = shabdNumber(w);
+    const idx = myTicket.indexOf(w);
+    const num = myNums[idx] || (typeof shabdNumber === 'function' ? shabdNumber(w) : 0);
     b.innerHTML = '<span class="cell-num">' + num + '</span><span class="cell-word">' + w + '</span>';
     b.addEventListener('click', function(){ tap(w, b); });
     if(drawnSet.has(w)) b.classList.add('came');
@@ -186,6 +188,7 @@ function resetLocal(){
   roundWinners = {}; myClaimedRounds = {}; kickedOut = false;
   repeatUsed.clear();
   myTicket = [];
+  myNums = [];
   $('ticket').innerHTML = '';
   $('repeat-btn').disabled = true;
   $('claim-btn').disabled = true;
@@ -208,6 +211,7 @@ function onData(d){
   }
   else if(d.type === 'ticket'){
     myTicket = Array.isArray(d.words) ? d.words : [];
+    myNums = Array.isArray(d.nums) ? d.nums.slice() : [];   /* क्रमांक होस्ट भेजता है (v5.6.9) */
     if(Array.isArray(d.drawn)) d.drawn.forEach(function(w){ drawnSet.add(w); });
     if(d.prizes && typeof d.prizes === 'object'){
       ['jp','corner','line'].forEach(function(k){
