@@ -79,7 +79,7 @@ function jtUnlockWords(pass){
     });
 }
 
-/* लॉक बैनर — खिलाड़ी (join) वाले पेज पर नहीं दिखेगा */
+/* लॉक बैनर — सिर्फ शब्द सूची (words) पेज पर दिखेगा (v5.6.11) — host/print पर नहीं */
 /* पासवर्ड के 5 गलत प्रयास = 30 मिनट बंद (v5.6.10 — PIN जैसा ही नियम) */
 const JT_WP_MAX = 5, JT_WP_LOCK_MS = 30 * 60 * 1000;
 function _wpFails(){ try{ return parseInt(localStorage.getItem('jt-wp-fail') || '0', 10) || 0; }catch(e){ return 0; } }
@@ -89,7 +89,7 @@ function _wpLocked(){ return Date.now() < _wpLockUntil(); }
 function _jtShowLockBanner(){
   try{
     if(!jtWordsLocked()) return;
-    if(/join\.html/i.test(location.href)) return;
+    if(!/words\.html/i.test(location.href)) return;
     const d = document.createElement('div');
     d.id = 'jt-words-lock';
     d.style.cssText = 'background:#fff;border:2px solid #ff6f00;border-radius:14px;padding:14px 16px;margin:12px 0;text-align:center';
