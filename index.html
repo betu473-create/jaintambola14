@@ -35,8 +35,9 @@
     </p>
   </div>
 
-  <a class="btn" href="./host.html">🎙 गेम होस्ट करें (होस्ट स्क्रीन)</a>
-  <a class="btn green" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
+  <a class="btn" id="host-entry" href="./host.html">🎙 गेम होस्ट करें (होस्ट स्क्रीन)</a>
+  <a class="btn green" id="join-entry" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
+  <p class="muted" id="role-switch" style="text-align:center;margin:6px 0 0;font-size:.85rem;display:none">गलती से गलत रोल चुना? <a href="#" id="role-reset" style="text-decoration:underline">रोल बदलें</a></p>
 
   <div class="card" style="text-align:center">
     <p class="muted" style="margin:0">
@@ -45,9 +46,36 @@
     </p>
   </div>
 
-  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.4</span></div>
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.5</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
 <script src="./js/pwa.js"></script>
+<script>
+/* रोल याद रखो: जिस बटन पर एक बार टैप किया, उसी फोन पर अब से वही बटन दिखेगा */
+(function(){
+  try{
+    var role = null;
+    try{ role = localStorage.getItem('jt-role'); }catch(e){}
+    var hostBtn = document.getElementById('host-entry');
+    var joinBtn = document.getElementById('join-entry');
+    var sw = document.getElementById('role-switch');
+    if(!hostBtn || !joinBtn || !sw) return;
+    if(role === 'host' || role === 'player'){
+      hostBtn.style.display = (role === 'host') ? '' : 'none';
+      joinBtn.style.display = (role === 'player') ? '' : 'none';
+      sw.style.display = 'block';
+    }
+    hostBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','host'); }catch(e){} });
+    joinBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','player'); }catch(e){} });
+    document.getElementById('role-reset').addEventListener('click', function(e){
+      e.preventDefault();
+      try{ localStorage.removeItem('jt-role'); }catch(err){}
+      hostBtn.style.display = '';
+      joinBtn.style.display = '';
+      sw.style.display = 'none';
+    });
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
