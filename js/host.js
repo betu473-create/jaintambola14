@@ -1177,3 +1177,42 @@ try{
   $('resume-room').textContent = s.room;
   $('resume-banner').style.display = 'block';
 })();
+
+/* ==================== कागज़ टिकट जाँच (v5.6.18) ==================== */
+(function(){
+  var btn = document.getElementById('pc-check');
+  var res = document.getElementById('pc-result');
+  var inp = document.getElementById('pc-num');
+  if(!btn || !res || !inp) return;
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return c === '&' ? '&' : (c === '<' ? '<' : '>'); }); }
+  function runCheck(){
+    var num = parseInt(inp.value, 10);
+    if(!num || num < 1){ res.innerHTML = '<b style="color:#c62828">टिकट नंबर डालें</b>'; return; }
+    var reg = {};
+    try{ reg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
+    var words = reg[num];
+    if(!words || !words.length){
+      res.innerHTML = '<b style="color:#c62828">⚠️ टिकट #' + num + ' रजिस्टर में नहीं मिली</b>' +
+        '<div style="font-size:.85rem;color:#6d4c41;margin-top:4px">जाँच उसी फ़ोन पर होगी जिस पर टिकटें बनाई थीं (Print Center से)। इस फ़ोन के रजिस्टर में अभी ' + Object.keys(reg).length + ' टिकट हैं।</div>';
+      return;
+    }
+    var ds = {};
+    drawn.forEach(function(w){ ds[w] = true; });
+    var ok = 0, left = [];
+    var chips = words.map(function(w){
+      var hit = !!ds[w];
+      if(hit) ok++; else left.push(w);
+      return '<span style="display:inline-block;margin:3px;padding:4px 9px;border-radius:8px;font-size:.85rem;font-weight:800;background:' + (hit ? '#c8e6c9' : '#ffcdd2') + ';color:' + (hit ? '#1b5e20' : '#b71c1c') + '">' + (hit ? '✅ ' : '❌ ') + esc(w) + '</span>';
+    }).join('');
+    var full = (ok === words.length);
+    var verdict = full
+      ? '<div style="font-size:1.05rem;font-weight:900;color:#1b5e20;background:#c8e6c9;border-radius:10px;padding:10px;margin-bottom:6px">🎉 टिकट #' + num + ' पूरी बन गई! (' + ok + '/' + words.length + ') — क्लेम सही!</div>'
+      : '<div style="font-size:1.05rem;font-weight:900;color:#b71c1c;background:#ffcdd2;border-radius:10px;padding:10px;margin-bottom:6px">❌ टिकट #' + num + ' — अभी ' + (words.length - ok) + ' शब्द बचे हैं (' + ok + '/' + words.length + ') — क्लेम अभी सही नहीं</div>';
+    var leftBox = left.length ? '<div style="margin-top:6px;font-size:.88rem;color:#4e342e"><b>अभी बचे शब्द:</b> ' + left.map(esc).join(' • ') + '</div>' : '';
+    res.innerHTML = verdict + '<div>' + chips + '</div>' + leftBox;
+    try{ beep(full ? 880 : 220, 0.12); }catch(e){}
+  }
+  btn.addEventListener('click', runCheck);
+  inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
+
+})();
