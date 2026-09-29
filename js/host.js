@@ -525,8 +525,9 @@ function makeTicket(){
 function sendTicketTo(conn){
   const words = makeTicket();
   if(players[conn.peer]) players[conn.peer].ticket = words;
+  const nums = words.map(function(w){ return shabdNumber(w); });   /* क्रमांक भी भेजो (v5.6.9) */
   try{
-    conn.send({ type:'ticket', words:words, drawn:drawn, prizes:prizes, winners:prizeWinners });
+    conn.send({ type:'ticket', words:words, nums:nums, drawn:drawn, prizes:prizes, winners:prizeWinners });
   }catch(e){}
 }
 
@@ -572,7 +573,7 @@ function handleData(conn, d){
       if(existingTicket){
         /* रीकनेक्ट: पुरानी टिकट वापस भेजो */
         players[conn.peer].ticket = existingTicket;
-        try{ conn.send({ type:'ticket', words:existingTicket, drawn:drawn, prizes:prizes, winners:prizeWinners }); }catch(e){}
+        try{ conn.send({ type:'ticket', words:existingTicket, nums:existingTicket.map(function(w){ return shabdNumber(w); }), drawn:drawn, prizes:prizes, winners:prizeWinners }); }catch(e){}
         toast('🔄 ' + players[conn.peer].name + ' दोबारा जुड़ा (पुरानी टिकट वापस)');
       }else{
         sendTicketTo(conn);
@@ -859,6 +860,7 @@ function showTicketModal(id){
 $('start-btn').addEventListener('click', function(){
   const n = Object.keys(conns).length;
   if(!n){ toast('पहले कम-से-कम एक खिलाड़ी लिंक से जुड़े'); return; }
+  if(!SHABD_LIST.length){ toast('🔒 पहले शब्द सूची खोलें — ऊपर पासवर्ड डालें'); return; }   /* v5.6.9 */
   unlockSpeech();
   started = true;
   winnerFull = null;
