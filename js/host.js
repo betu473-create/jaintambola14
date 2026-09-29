@@ -472,7 +472,7 @@ function drawWord(){
     }
   }
   showWord(w);
-  broadcast({ type:'word', word:w, num:num });
+  broadcast({ type:'word', word:w, num:num, pack:(window.JT_PACK_OK ? 1 : 0) });   /* v5.6.15 */
   renderChips();
   $('drawn-count').textContent = drawn.length;
   saveHostState();
