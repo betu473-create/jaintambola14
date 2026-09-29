@@ -60,12 +60,58 @@ if('speechSynthesis' in window){
 
 /* फ़ॉलबैक (v5.6.12): फोन में हिंदी TTS आवाज़ न हो तो इंटरनेट से बोलो —
    (Google Translate की Hindi आवाज़) — किसी सेटिंग की ज़रूरत नहीं */
-function speakNet(text){
+/* v5.6.14: दो रास्ते (translate.google.com और translate.googleapis.com) —
+   एक अटके तो दूसरा। दोनों अटक जाएँ तो नीचे "🔊 शब्द सुनें" बटन —
+   दबाते ही आवाज़ बजती है (कुछ फोन बिना टैप के इंटरनेट-आवाज़ रोक देते हैं) */
+let _netAudio = null;
+let _netLastText = '';
+let _netFailToasts = 0;
+function _netTtsUrl(text, alt){
+  const q = encodeURIComponent(String(text || '').slice(0, 180));
+  return (alt
+    ? 'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=hi&q=' + q
+    : 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=hi&q=' + q);
+}
+function _netPlay(text, alt){
+  const a = new Audio(_netTtsUrl(text, alt));
+  _netAudio = a;
+  a.onerror = function(){
+    if(!alt) _netPlay(text, true);       /* पहला रास्ता फेल — दूसरा */
+    else _netFail();
+  };
+  a.play().catch(function(){ if(alt) _netFail(); else _netPlay(text, true); });
+}
+function _netFail(){
   try{
-    try{ if(typeof toast === 'function') toast('🌐 आवाज़ इंटरनेट से बोल रही है…'); }catch(e2){}
-    const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=hi&q=' + encodeURIComponent(String(text || '').slice(0, 180)));
-    a.play().catch(function(){ /* नेट भी न हो तो चुपचाप */ });
+    if(_netFailToasts < 2 && typeof toast === 'function') toast('🔊 आवाज़ के लिए नीचे बटन दबाएँ');
   }catch(e){}
+  _netFailToasts++;
+  _showNetVoiceBtn();
+}
+function _showNetVoiceBtn(){
+  try{
+    let b = document.getElementById('jt-net-voice-btn');
+    if(!b){
+      b = document.createElement('button');
+      b.id = 'jt-net-voice-btn';
+      b.type = 'button';
+      b.textContent = '🔊 शब्द सुनें';
+      b.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#e65100;color:#fff;border:none;border-radius:24px;padding:12px 24px;font-weight:700;font-size:1rem;box-shadow:0 3px 12px rgba(0,0,0,.35)';
+      b.addEventListener('click', function(){
+        b.remove();
+        try{ if(_netAudio) _netAudio.pause(); }catch(e){}
+        _netPlay(_netLastText, false);
+      });
+      (document.body || document.documentElement).appendChild(b);
+    }
+  }catch(e){}
+}
+function speakNet(text){
+  const t = String(text || '');
+  if(!t) return;
+  _netLastText = t;
+  try{ if(_netAudio) _netAudio.pause(); }catch(e){}
+  try{ _netPlay(t, false); }catch(e){}
 }
 
 /* शब्द को हिंदी में निर्धारित बार (default: 1) बोलकर सुनाता है।
