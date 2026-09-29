@@ -39,6 +39,15 @@
   <a class="btn green" id="join-entry" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
   <p class="muted" id="role-switch" style="text-align:center;margin:6px 0 0;font-size:.85rem;display:none">गलती से गलत रोल चुना? <a href="#" id="role-reset" style="text-decoration:underline">रोल बदलें</a></p>
 
+  <!-- होस्ट PIN लॉक (v5.6.6) -->
+  <div class="card" id="pin-card" style="display:none;text-align:center">
+    <h2 style="font-size:1.1rem;margin:0 0 6px">🔒 होस्ट स्क्रीन लॉक है</h2>
+    <p class="muted" style="margin:0 0 10px;font-size:.9rem">यह स्क्रीन सिर्फ़ होस्ट (Himanshu Jain) के लिए है। 4 अंकों का PIN डालें।</p>
+    <input class="txt" id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off" style="text-align:center;letter-spacing:6px;font-size:1.2rem">
+    <button class="btn" id="pin-ok" type="button">खोलें 🔓</button>
+    <p class="muted" id="pin-msg" style="display:none;color:#c62828;margin:8px 0 0;font-size:.9rem">गलत PIN — दोबारा कोशिश करें</p>
+  </div>
+
   <div class="card" style="text-align:center">
     <p class="muted" style="margin:0">
       📱 इस ऐप को मोबाइल की होम-स्क्रीन पर भी जोड़ा जा सकता है (PWA)।<br>
@@ -46,7 +55,7 @@
     </p>
   </div>
 
-  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.5</span></div>
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.6</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
 <script src="./js/pwa.js"></script>
@@ -65,8 +74,50 @@
       joinBtn.style.display = (role === 'player') ? '' : 'none';
       sw.style.display = 'block';
     }
-    hostBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','host'); }catch(e){} });
     joinBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','player'); }catch(e){} });
+
+    /* होस्ट बटन: पहले PIN (v5.6.6) — सही PIN पर यह फोन 'खुला' याद रहता है */
+    var HOST_PIN_HASH = 'f898c0e2fa3b9767f4e8e8e98c4a29bb98664b2a6f7b9e67129aa90915ed8a4a';
+    hostBtn.addEventListener('click', function(e){
+      var unlocked = false;
+      try{ unlocked = localStorage.getItem('jt-host-ok') === '1'; }catch(err){}
+      if(unlocked){ try{ localStorage.setItem('jt-role','host'); }catch(err2){} return; }
+      e.preventDefault();
+      var pc = document.getElementById('pin-card');
+      if(!pc) return;
+      pc.style.display = 'block';
+      try{ pc.scrollIntoView({behavior:'smooth', block:'center'}); }catch(err3){}
+      setTimeout(function(){ try{ document.getElementById('pin-input').focus(); }catch(err4){} }, 350);
+    });
+
+    function _sha256hex(s){
+      if(!(window.crypto && window.crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+      return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+        .then(function(b){
+          var h = '', a = new Uint8Array(b);
+          for(var i = 0; i < a.length; i++){ h += ('0' + a[i].toString(16)).slice(-2); }
+          return h;
+        })
+        .catch(function(){ return null; });
+    }
+    function _tryPin(){
+      var inp = document.getElementById('pin-input');
+      var v = (inp && inp.value ? String(inp.value) : '').trim();
+      if(!v) return;
+      _sha256hex(v).then(function(h){
+        if(h && h === HOST_PIN_HASH){
+          try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-role','host'); }catch(e){}
+          location.href = './host.html';
+        }else{
+          document.getElementById('pin-msg').style.display = 'block';
+          inp.value = '';
+          try{ inp.focus(); }catch(e){}
+        }
+      });
+    }
+    var pinOk = document.getElementById('pin-ok'), pinInp = document.getElementById('pin-input');
+    if(pinOk) pinOk.addEventListener('click', _tryPin);
+    if(pinInp) pinInp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); _tryPin(); } });
     document.getElementById('role-reset').addEventListener('click', function(e){
       e.preventDefault();
       try{ localStorage.removeItem('jt-role'); }catch(err){}
