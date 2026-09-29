@@ -860,7 +860,7 @@ function showTicketModal(id){
 $('start-btn').addEventListener('click', function(){
   const n = Object.keys(conns).length;
   if(!n){ toast('पहले कम-से-कम एक खिलाड़ी लिंक से जुड़े'); return; }
-  if(!SHABD_LIST.length){ toast('🔒 पहले शब्द सूची खोलें — ऊपर पासवर्ड डालें'); return; }   /* v5.6.9 */
+  if(!SHABD_LIST.length){ toast('🔒 पहले शब्द सूची खोलें — “शब्द सूची” पेज पर जाकर पासवर्ड डालें'); return; }   /* v5.6.11 */
   unlockSpeech();
   started = true;
   winnerFull = null;
