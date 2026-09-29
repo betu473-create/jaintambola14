@@ -13,6 +13,7 @@ const drawnSet = new Set(), markedSet = new Set();
 let muted = false, claimed = false, winner = null;
 let lastWord = null;
 let lastNum = 0;      /* आख़िरी बोला गया क्रमांक (रिपीट के लिए) */
+let lastPack = 0;     /* v5.6.15: पैक-आवाज़ उपलब्ध है या नहीं */
 let wrongClaims = 0;   /* गलत क्लेम की गिनती (3 पर गेम से बाहर) */
 const repeatUsed = new Set();
 const PRIZE_LABELS = { jp:'जल्दी पाँच', corner:'चार कोन', line:'लाइन', full:'फुल हाउस' };
@@ -158,21 +159,26 @@ $('repeat-btn').addEventListener('click', function(){
   repeatUsed.add(lastWord);
   $('repeat-btn').disabled = true;
   beep(880, 0.3);
-  try{ speakWord(announcePhrase(lastNum, lastWord), JT_CONFIG.SPEAK_TIMES); }
-  catch(e){ speakWord(lastWord, JT_CONFIG.SPEAK_TIMES); }
+  if(lastPack && lastNum){ speakPack(lastNum, announcePhrase(lastNum, lastWord)); }   /* v5.6.15 */
+  else{
+    try{ speakWord(announcePhrase(lastNum, lastWord), JT_CONFIG.SPEAK_TIMES); }
+    catch(e){ speakWord(lastWord, JT_CONFIG.SPEAK_TIMES); }
+  }
   toast('🔁 शब्द दोबारा बोला जा रहा है (सिर्फ 1 बार)');
 });
 
 /* ==================== होस्ट के संदेश ==================== */
-function onWord(w, num){
+function onWord(w, num, pack){
   if(!w) return;
   drawnSet.add(w);
   lastWord = w;
   lastNum = num || 0;
+  lastPack = pack ? 1 : 0;   /* v5.6.15: पैक-आवाज़ */
   repeatUsed.delete(w);   /* नया शब्द आया तो उसका रिपीट उपलब्ध */
   if(!muted){
     beep(880, 0.3);
-    try{ speakWord(announcePhrase(num, w)); }catch(e){ speakWord(w); }
+    if(pack && num){ speakPack(num, announcePhrase(num, w)); }
+    else{ try{ speakWord(announcePhrase(num, w)); }catch(e){ speakWord(w); } }
   }
   const cell = cellMap[w];
   if(cell) cell.classList.add('came');
@@ -226,7 +232,7 @@ function onData(d){
     saveTicketLocal(rc, myTicket, myName);
     setGStatus('🎟 आपकी डिजिटल टिकट तैयार! जैसे ही शब्द आए और वह टिकट में हो, तुरंत टैप करें');
   }
-  else if(d.type === 'word'){ onWord(d.word, d.num); }
+  else if(d.type === 'word'){ onWord(d.word, d.num, d.pack); }
   else if(d.type === 'reset'){ resetLocal(); }
   else if(d.type === 'prizes'){
     if(d.prizes && typeof d.prizes === 'object'){
