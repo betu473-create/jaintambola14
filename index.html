@@ -55,7 +55,7 @@
     </p>
   </div>
 
-  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.7</span></div>
+  <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.6.8</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
 <script src="./js/pwa.js"></script>
@@ -84,7 +84,16 @@
     function _pinLocked(){ return Date.now() < _pinLockUntil(); }
     hostBtn.addEventListener('click', function(e){
       var unlocked = false;
-      try{ unlocked = localStorage.getItem('jt-host-ok') === '1'; }catch(err){}
+      try{
+        unlocked = localStorage.getItem('jt-host-ok') === '1';
+        if(unlocked){
+          /* लॉगिन समय-सीमा (v5.6.8): TTL बीत गया तो दोबारा PIN माँगो */
+          var t0 = parseInt(localStorage.getItem('jt-host-ok-time') || '0', 10) || 0;
+          var ttl0 = parseInt(localStorage.getItem('jt-host-ttl') || '0', 10);
+          if(!(ttl0 > 0)) ttl0 = 43200000; /* डिफ़ॉल्ट: 12 घंटे */
+          if(!t0 || (Date.now() - t0) > ttl0){ localStorage.removeItem('jt-host-ok'); unlocked = false; }
+        }
+      }catch(err){}
       if(unlocked){ try{ localStorage.setItem('jt-role','host'); }catch(err2){} return; }
       e.preventDefault();
       var pc = document.getElementById('pin-card');
@@ -123,7 +132,7 @@
       if(!v) return;
       _sha256hex(v).then(function(h){
         if(h && h === HOST_PIN_HASH){
-          try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-role','host');
+          try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-host-ok-time', String(Date.now())); localStorage.setItem('jt-role','host');
                localStorage.removeItem('jt-pin-fail'); localStorage.removeItem('jt-pin-lock'); }catch(e){}
           location.href = './host.html';
         }else{
