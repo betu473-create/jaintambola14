@@ -64,6 +64,7 @@ if('speechSynthesis' in window){
    एक अटके तो दूसरा। दोनों अटक जाएँ तो नीचे "🔊 शब्द सुनें" बटन —
    दबाते ही आवाज़ बजती है (कुछ फोन बिना टैप के इंटरनेट-आवाज़ रोक देते हैं) */
 let _netAudio = null;
+let _netLastPack = 0;   /* v5.6.15: पैक वाली आवाज़ का क्रमांक */
 let _netLastText = '';
 let _netFailToasts = 0;
 function _netTtsUrl(text, alt){
@@ -100,15 +101,32 @@ function _showNetVoiceBtn(){
       b.addEventListener('click', function(){
         b.remove();
         try{ if(_netAudio) _netAudio.pause(); }catch(e){}
-        _netPlay(_netLastText, false);
+        if(_netLastPack){ speakPack(_netLastPack, _netLastText); }
+        else{ _netPlay(_netLastText, false); }
       });
       (document.body || document.documentElement).appendChild(b);
     }
   }catch(e){}
 }
+/* v5.6.15: ऐप के अंदर पैक की हुई आवाज़ (audio/w/N.mp3) —
+   पहले यह, न चले तो TTS, फिर इंटरनेट — सब अपने आप */
+function speakPack(num, phrase){
+  const ph = String(phrase || '');
+  if(!num){ speakWord(ph); return; }
+  try{
+    _netLastPack = num;
+    _netLastText = ph;
+    const a = new Audio('audio/w/' + num + '.mp3');
+    _netAudio = a;
+    a.onerror = function(){ speakWord(ph); };
+    a.play().catch(function(){ speakWord(ph); });
+  }catch(e){ speakWord(ph); }
+}
+
 function speakNet(text){
   const t = String(text || '');
   if(!t) return;
+  _netLastPack = 0;
   _netLastText = t;
   try{ if(_netAudio) _netAudio.pause(); }catch(e){}
   try{ _netPlay(t, false); }catch(e){}
