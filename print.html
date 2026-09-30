@@ -92,9 +92,6 @@
         <button class="btn small ghost" id="reg-clear" type="button" style="border-color:#e57373;color:#c62828">🗑 नई शुरुआत (#1 से)</button>
       </div>
       <div class="pp-row"><span class="muted">💡 टिकटें इसी फ़ोन से बनाओ — यही फ़ोन रजिस्टर याद रखता है। गेम में होस्ट स्क्रीन के क्लेम सेक्शन में "🔍 कागज़ टिकट जाँच" में नंबर डालकर तुरंत जाँच होगी।</span></div>
-      <div class="pp-row" style="margin-top:6px">
-        <button class="btn small" id="diary-send" type="button" style="width:100%">📤 डायरी भेजें (लैपटॉप / दूसरा फ़ोन)</button>
-      </div>
     </div>
 
     <div id="panel-chits" class="pp-controls" style="display:none">
@@ -112,20 +109,8 @@
   <div id="print-area"></div>
   <p class="muted noprint" style="text-align:center;margin-top:10px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
-<div id="diary-modal" style="display:none;position:fixed;inset:0;background:rgba(62,39,35,.55);z-index:120;align-items:center;justify-content:center;padding:18px">
-  <div style="background:#fffdf7;border-radius:16px;padding:18px;max-width:360px;width:100%;text-align:center">
-    <div style="font-weight:900;font-size:1.05rem;color:#4e342e;margin-bottom:4px">📤 डायरी भेजें</div>
-    <p style="font-size:.85rem;color:#795548;margin:6px 0 10px;line-height:1.6">यह लिंक <b>WhatsApp पर ख़ुद को</b> भेजें → लैपटॉप/दूसरे फ़ोन के WhatsApp में वही संदेश खोलें → लिंक पर टैप → डायरी अपने आप चली जाएगी।<br>(लिंक 10 मिनट में बंद हो जाता है)</p>
-    <div style="font-size:1.4rem;font-weight:900;letter-spacing:6px;color:#e65100;margin:4px 0 8px" id="dm-code">—</div>
-    <input id="dm-link" readonly style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #e0c9a6;border-radius:10px;font-size:.78rem;margin-bottom:10px">
-    <a id="dm-wa" class="btn small green" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-bottom:8px">🟢 WhatsApp पर भेजें</a>
-    <button class="btn small ghost" id="dm-close" type="button" style="width:100%">बंद करें</button>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
 <script src="./js/config.js"></script>
 <script src="./js/words.js"></script>
 <script src="./js/pwa.js"></script>
@@ -240,65 +225,6 @@
 })();
 </script>
 
-<script>
-/* 📤 डायरी भेजें (v5.7.0) — WhatsApp Web जैसा: दूसरा उपकरण लिंक से जुड़कर डायरी ले लेता है */
-(function(){
-  var b = document.getElementById('diary-send');
-  var modal = document.getElementById('diary-modal');
-  if(!b || !modal) return;
-  var peer = null, code = null, expiry = 0;
-  function toast(m){
-    var t = document.getElementById('toast');
-    if(t){ t.textContent = m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2600); }
-  }
-  function makeCode(){
-    var cs = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = '';
-    for(var i = 0; i < 6; i++) s += cs.charAt(Math.floor(Math.random() * cs.length));
-    return s;
-  }
-  function stop(){ if(peer){ try{ peer.destroy(); }catch(e){} } peer = null; }
-  function show(){
-    var link = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'pair.html?c=' + code;
-    document.getElementById('dm-link').value = link;
-    document.getElementById('dm-code').textContent = code;
-    document.getElementById('dm-wa').href = 'https://wa.me/?text=' +
-      encodeURIComponent('💻 जैन ताम्बोला — डायरी लिंक (10 मिनट में बंद):\n' + link);
-    modal.style.display = 'flex';
-  }
-  b.addEventListener('click', function(){
-    if(peer && Date.now() < expiry){ show(); return; }
-    if(typeof Peer === 'undefined'){ toast('❌ इंटरनेट नहीं मिला — दोबारा दबाएँ'); return; }
-    stop();
-    code = makeCode();
-    expiry = Date.now() + 10 * 60 * 1000;
-    toast('⏳ डायरी लिंक बन रहा है…');
-    peer = new Peer('JTPAIR-' + code);
-    peer.on('open', function(){
-      show();
-      toast('📤 लिंक तैयार — WhatsApp पर ख़ुद को भेजें');
-    });
-    peer.on('connection', function(c){
-      c.on('data', function(d){
-        if(d && d.type === 'want-diary'){
-          var reg = {};
-          try{ reg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
-          var payload = { type: 'diary', reg: reg };
-          try{ payload.fullCount = localStorage.getItem('jt_full_count'); }catch(e){}
-          try{ payload.prizes = localStorage.getItem('jt_prizes'); }catch(e){}
-          c.send(payload);
-          toast('📤 डायरी भेज दी ✅ (' + Object.keys(reg).length + ' टिकट)');
-          setTimeout(function(){ modal.style.display = 'none'; }, 1500);
-        }
-      });
-    });
-    peer.on('error', function(){ toast('❌ लिंक नहीं बन पाया — दोबारा दबाएँ'); stop(); });
-    setTimeout(function(){ if(peer && Date.now() >= expiry) stop(); }, 10 * 60 * 1000 + 1000);
-  });
-  var inp = document.getElementById('dm-link');
-  if(inp) inp.addEventListener('click', function(){ inp.select(); });
-  var cl = document.getElementById('dm-close');
-  if(cl) cl.addEventListener('click', function(){ modal.style.display = 'none'; });
-})();
-</script>
+
 </body>
 </html>
