@@ -619,13 +619,13 @@ function handleData(conn, d){
     if(d.screen){
       /* जाँच स्क्रीन (लैपटॉप) — v5.8.0: डायरी + अब तक के शब्द भी भेजो */
       if(d.checker){
-        players[conn.peer] = { name:'🔍 जाँच स्क्रीन (लैपटॉप)', screen:true, deviceId:String(d.deviceId || '') };
+        players[conn.peer] = { name:'🔍 जाँच स्क्रीन', screen:true, deviceId:String(d.deviceId || '') };
         renderPlayers();
         try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
         var creg = {};
         try{ creg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
         try{ conn.send({ type:'checker-data', reg:creg, drawn:drawn }); }catch(e){}
-        toast('🔍 जाँच स्क्रीन जुड़ गई (लैपटॉप)');
+        toast('🔍 जाँच स्क्रीन जुड़ गई');
         return;
       }
       players[conn.peer] = { name:'📺 प्रोजेक्टर स्क्रीन', screen:true, deviceId:String(d.deviceId || '') };
