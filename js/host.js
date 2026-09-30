@@ -918,7 +918,10 @@ function showTicketModal(id){
 /* ==================== बटन ==================== */
 $('start-btn').addEventListener('click', function(){
   const n = Object.keys(conns).length;
-  if(!n){ toast('पहले कम-से-कम एक खिलाड़ी लिंक से जुड़े'); return; }
+  if(!n){
+    /* v5.6.21: कागज़ वाला ऑफ़लाइन गेम — बिना खिलाड़ी के भी शुरू हो सकता है */
+    if(!confirm('कोई खिलाड़ी (फोन से) अभी जुड़ा नहीं है।\n\nकागज़ वाला ऑफ़लाइन गेम शुरू करना है?\n(टिकटें Print Center से छपी हुई हों, या बाद में खिलाड़ी जुड़ भी सकते हैं)')) return;
+  }
   if(!SHABD_LIST.length){ toast('🔒 पहले शब्द सूची खोलें — “शब्द सूची” पेज पर जाकर पासवर्ड डालें'); return; }   /* v5.6.11 */
   unlockSpeech();
   started = true;
