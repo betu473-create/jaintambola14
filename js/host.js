@@ -875,6 +875,14 @@ function createRoom(code){
   $('screen-link').href = 'screen.html?room=' + code;
   try{ if($('check-link')) $('check-link').href = 'check.html?room=' + code; }catch(e){}
   try{
+    if($('check-url')){
+      const clink = jtSiteUrl() + '/check.html?room=' + code;
+      $('check-url').value = clink;
+      if($('check-wa')) $('check-wa').href = 'https://wa.me/?text=' +
+        encodeURIComponent('॥ जैन ताम्बोला ॥ 🔍 जाँच स्क्रीन (काग़ज़ टिकट जाँच — किसी भी उपकरण पर खोलें):\n' + clink + '\nरूम कोड: ' + code);
+    }
+  }catch(e){}
+  try{
     const qr = qrcode(0, 'M');
     qr.addData(link);
     qr.make();
