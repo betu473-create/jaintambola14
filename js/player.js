@@ -295,6 +295,24 @@ function onClaimResult(d){
     }
     updateClaimBtn();
   }
+  else if(d.ok && d.prize === 'full' && d.more && d.name){
+    /* v5.6.19: फुल हाउस जीता — पर गेम जारी है (1/2/3 विजेता सिस्टम) */
+    toast('🏆 फुल हाउस ' + d.count + '/' + d.total + ' — ' + d.name + '। गेम जारी…');
+    setGStatus('🏆 फुल हाउस ' + d.count + '/' + d.total + ': ' + d.name + ' — गेम जारी! अगले विजेता की प्रतीक्षा…');
+    $('winner-big-name').textContent = d.name;
+    $('winner-big-sub').textContent = (d.name === myName)
+      ? '🏆 बधाई हो! फुल हाउस ' + d.count + '/' + d.total + ' जीता! 🏆'
+      : 'फुल हाउस विजेता ' + d.count + '/' + d.total + ' — गेम जारी';
+    $('winner-big').classList.add('show');
+    confettiBurst();
+    if(!muted) beep(1200, 0.4);
+    setTimeout(function(){ $('winner-big').classList.remove('show'); }, 3000);
+    if(d.name === myName){
+      winner = d.name;
+      $('claim-btn').disabled = true;
+      showSelfieCard('full');
+    }
+  }
   else if(d.ok && d.prize === 'full' && d.name){
     winner = d.name;
     $('claim-btn').disabled = true;
