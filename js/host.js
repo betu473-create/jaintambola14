@@ -617,6 +617,17 @@ function handleData(conn, d){
   if(!d || typeof d !== 'object') return;
   if(d.type === 'join' && d.name){
     if(d.screen){
+      /* जाँच स्क्रीन (लैपटॉप) — v5.8.0: डायरी + अब तक के शब्द भी भेजो */
+      if(d.checker){
+        players[conn.peer] = { name:'🔍 जाँच स्क्रीन (लैपटॉप)', screen:true, deviceId:String(d.deviceId || '') };
+        renderPlayers();
+        try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
+        var creg = {};
+        try{ creg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
+        try{ conn.send({ type:'checker-data', reg:creg, drawn:drawn }); }catch(e){}
+        toast('🔍 जाँच स्क्रीन जुड़ गई (लैपटॉप)');
+        return;
+      }
       players[conn.peer] = { name:'📺 प्रोजेक्टर स्क्रीन', screen:true, deviceId:String(d.deviceId || '') };
       renderPlayers();
       try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
@@ -862,6 +873,7 @@ function createRoom(code){
   $('wa-share').href = 'https://wa.me/?text=' +
     encodeURIComponent('॥ जैन ताम्बोला ॥ गेम में शामिल हों:\n' + link + '\nरूम कोड: ' + code);
   $('screen-link').href = 'screen.html?room=' + code;
+  try{ if($('check-link')) $('check-link').href = 'check.html?room=' + code; }catch(e){}
   try{
     const qr = qrcode(0, 'M');
     qr.addData(link);
