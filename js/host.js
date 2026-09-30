@@ -1268,3 +1268,32 @@ try{
   inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
 
 })();
+
+/* ==================== 🔄 नया वर्ज़न लाओ (v5.6.22) ==================== */
+(function(){
+  var b = document.getElementById('upd-btn');
+  if(!b) return;
+  var busy = false;
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      try{ toast('🔄 नया वर्ज़न आ गया — दोबारा खोल रहे हैं…'); }catch(e){}
+      setTimeout(function(){ location.reload(); }, 900);
+    });
+  }
+  b.addEventListener('click', function(){
+    if(busy) return;
+    if(!('serviceWorker' in navigator)){ toast('यह ब्राउज़र अपडेट समर्थित नहीं करता'); return; }
+    busy = true;
+    var old = b.textContent;
+    b.textContent = '⏳';
+    toast('⏳ नए वर्ज़न की जाँच…');
+    navigator.serviceWorker.getRegistration().then(function(reg){
+      if(!reg){ b.textContent = old; busy = false; return; }
+      reg.update().then(function(){
+        var w = reg.waiting || reg.installing;
+        b.textContent = old; busy = false;
+        toast(w ? '⏳ नया वर्ज़न आ रहा है — ऐप खुली रहने दें, खुद रीस्टार्ट हो जाएगी' : '✅ आपके पास नया वर्ज़न ही है');
+      }).catch(function(){ b.textContent = old; busy = false; toast('❌ जाँच नहीं हो पाई — इंटरनेट देख लें'); });
+    });
+  });
+})();
