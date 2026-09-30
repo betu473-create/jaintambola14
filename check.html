@@ -14,7 +14,6 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
 .inp{width:100%;box-sizing:border-box;padding:14px;border:1.5px solid #e0c9a6;border-radius:12px;font-size:1.3rem;font-weight:800;text-align:center;letter-spacing:4px;text-transform:uppercase;background:#fff;color:#4e342e;font-family:inherit}
 .btn{display:block;width:100%;background:#e65100;color:#fff;border:none;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:800;font-family:inherit;cursor:pointer;margin-top:10px;text-decoration:none;text-align:center;box-sizing:border-box}
 .btn.small{padding:10px;font-size:.95rem}
-.btn.green{background:#2e7d32}
 .live{display:flex;justify-content:space-between;align-items:center;background:#fff3e0;border-radius:12px;padding:10px 14px;font-weight:800;color:#5d4037;margin-bottom:14px}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:pu 1.5s infinite}
 @keyframes pu{50%{opacity:.4}}
@@ -55,14 +54,14 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
       <p style="margin-top:0" id="words-list">अभी कोई शब्द नहीं आया</p>
     </div>
 
-    <p class="muted" style="text-align:center">शब्द होस्ट फ़ोन पर निकलते ही यहाँ अपने आप दिखेंगे • ॥ वंदे श्री गुरू तारणम् ॥</p>
+    <p class="muted" style="text-align:center">शब्द होस्ट पर निकलते ही यहाँ अपने आप दिखेंगे • ॥ वंदे श्री गुरू तारणम् ॥</p>
   </div>
 
 </div>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
 <script>
-/* जाँच स्क्रीन (v5.8.0) — होस्ट फ़ोन से डायरी + लाइव शब्द लेती है, टिकट नंबर से जाँच करती है */
+/* जाँच स्क्रीन (v5.8.2) — होस्ट से डायरी + लाइव शब्द लेती है, टिकट नंबर से जाँच करती है */
 (function(){
   function $(id){ return document.getElementById(id); }
   var conn = null, reg = {}, drawnSet = {}, drawnArr = [];
@@ -79,8 +78,8 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
     if(!num || num < 1){ res.innerHTML = '<b style="color:#c62828">टिकट नंबर डालें</b>'; return; }
     var words = reg[num];
     if(!words || !words.length){
-      res.innerHTML = '<b style="color:#c62828">⚠️ टिकट #' + num + ' होस्ट फ़ोन के रजिस्टर में नहीं मिली</b>' +
-        '<div class="muted" style="margin-top:4px">जाँच उसी फ़ोन की टिकटों पर चलती है जिन्हें Print Center से बनाया गया था (रजिस्टर में अभी ' + Object.keys(reg).length + ' टिकट हैं)।</div>';
+      res.innerHTML = '<b style="color:#c62828">⚠️ टिकट #' + num + ' होस्ट के रजिस्टर में नहीं मिली</b>' +
+        '<div class="muted" style="margin-top:4px">जाँच उसी उपकरण की टिकटों पर चलती है जिन्हें Print Center से बनाया गया था (रजिस्टर में अभी ' + Object.keys(reg).length + ' टिकट हैं)।</div>';
       return;
     }
     var ok = 0, left = [];
@@ -103,38 +102,45 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
     if(!/^[A-Z0-9]{6}$/.test(code)){ alert('रूम कोड सही नहीं है (6 अक्षर/अंक) — होस्ट से पूछें'); return; }
     if(typeof Peer === 'undefined'){ alert('इंटरनेट नहीं मिला — पेज दोबारा खोलें'); return; }
     $('join-btn').textContent = 'जुड़ा जा रहा है…';
-    var peer = new Peer();
-    var c = peer.connect('JT-' + code, { reliable: true });
+    var peer;
+    try{ peer = new Peer(); }catch(e){ alert('कनेक्शन नहीं बना — इंटरनेट जाँचकर दोबारा दबाएँ'); return; }
     var opened = false;
-    c.on('open', function(){
-      opened = true;
-      conn = c;
-      c.send({ type: 'join', name: 'जाँच', screen: true, checker: true, deviceId: 'checker-' + Date.now() });
+    /* v5.8.2 FIX: पहले PeerJS सर्वर से खुद जुड़ो, फिर होस्ट से (वरना चुपचाप अटक जाता है — प्रोजेक्टर स्क्रीन जैसा ही तरीका) */
+    peer.on('open', function(){
+      var c = peer.connect('JT-' + code, { reliable: true });
+      c.on('open', function(){
+        opened = true;
+        conn = c;
+        c.send({ type: 'join', name: 'जाँच', screen: true, checker: true, deviceId: 'CHECKER-' + Date.now() });
+      });
+      c.on('data', function(d){
+        if(!d) return;
+        if(d.type === 'checker-data'){
+          reg = d.reg || {};
+          (d.drawn || []).forEach(function(w){ drawnSet[w] = true; drawnArr.push(w); });
+          $('join-card').style.display = 'none';
+          $('console').style.display = 'block';
+          $('room-show').textContent = code;
+          renderWords();
+          $('tk-result').innerHTML = '<div class="ok" style="border-radius:12px;padding:10px;font-weight:800">✅ जुड़ गए! रजिस्टर में ' + Object.keys(reg).length + ' टिकट मिलीं — जाँच शुरू करें।</div>';
+        }
+        else if(d.type === 'word' && d.word){
+          if(!drawnSet[d.word]){ drawnSet[d.word] = true; drawnArr.push(d.word); }
+          renderWords();
+        }
+      });
+      c.on('close', function(){
+        $('console').style.display = 'none';
+        $('join-card').style.display = 'block';
+        $('join-btn').textContent = 'दोबारा जुड़ें';
+        alert('होस्ट से कनेक्शन टूट गया — दोबारा जुड़ें दबाएँ');
+      });
     });
-    c.on('data', function(d){
-      if(!d) return;
-      if(d.type === 'checker-data'){
-        reg = d.reg || {};
-        (d.drawn || []).forEach(function(w){ drawnSet[w] = true; drawnArr.push(w); });
-        $('join-card').style.display = 'none';
-        $('console').style.display = 'block';
-        $('room-show').textContent = code;
-        renderWords();
-        $('tk-result').innerHTML = '<div class="ok" style="border-radius:12px;padding:10px;font-weight:800">✅ जुड़ गए! रजिस्टर में ' + Object.keys(reg).length + ' टिकट मिलीं — जाँच शुरू करें।</div>';
-      }
-      else if(d.type === 'word' && d.word){
-        if(!drawnSet[d.word]){ drawnSet[d.word] = true; drawnArr.push(d.word); }
-        renderWords();
-      }
-    });
-    c.on('close', function(){
-      $('console').style.display = 'none';
-      $('join-card').style.display = 'block';
-      $('join-btn').textContent = 'दोबारा जुड़ें';
-      alert('होस्ट से कनेक्शन टूट गया — दोबारा जुड़ें दबाएँ');
+    peer.on('error', function(){
+      $('join-btn').textContent = '❌ नहीं जुड़ पाए — कोड जाँचें, दोबारा दबाएँ';
     });
     setTimeout(function(){
-      if(!opened){ $('join-btn').textContent = '❌ नहीं जुड़ पाए — कोड देखें / दोबारा दबाएँ'; }
+      if(!opened){ $('join-btn').textContent = '❌ नहीं जुड़ पाए — होस्ट खुला है ना? दोबारा दबाएँ'; }
     }, 12000);
   }
   $('join-btn').addEventListener('click', join);
