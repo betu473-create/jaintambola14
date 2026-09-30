@@ -11,7 +11,11 @@ function $(id){ return document.getElementById(id); }
 
 let peer = null;
 const conns = {}, players = {};
-let started = false, winnerFull = null;
+let started = false, winnerFull = null, fullWinners = [];   /* v5.6.19: 1/2/3 फुल हाउस विजेता */
+function fullTarget(){
+  try{ var v = parseInt(localStorage.getItem("jt_full_count"), 10); if(v === 2 || v === 3) return v; }catch(e){}
+  return 1;
+}
 let deck = [], drawn = [];
 const drawnSet = new Set();
 let autoTimer = null, autoTotal = 10, autoLeft = 0;
@@ -126,6 +130,7 @@ function saveHostState(){
       pool: gamePool,
       drawn: drawn,
       prizeWinners: prizeWinners,
+      fullWinners: fullWinners,
       gameStartMs: gameStartTime,
       players: Object.keys(players).filter(function(id){ return !players[id].screen; }).map(function(id){
         return { name: players[id].name, deviceId: players[id].deviceId || '', ticket: players[id].ticket || null };
@@ -148,6 +153,11 @@ function restoreHostState(){
   createRoom(String(s.room)); /* वही रूम कोड — लिंक भी वही रहेगा */
   started = true;
   winnerFull = null;
+  fullWinners = Array.isArray(s.fullWinners) ? s.fullWinners.slice() : [];
+  if(fullWinners.length){
+    $('winner-name').textContent = fullWinners.join(', ');
+    $('winner-box').classList.add('show');
+  }
   deck = s.deck;
   gamePool = (Array.isArray(s.pool) && s.pool.length) ? s.pool :
     (Array.isArray(s.deck) && Array.isArray(s.drawn) ? s.deck.concat(s.drawn) : []);
@@ -457,6 +467,41 @@ function showWord(word){
 
 /* ==================== गेम खत्म करने का एक ही रास्ता (v5.6.16) ==================== */
 /* चाहे होस्ट मंज़ूरी दे, चाहे टिकट अपने आप पूरी हो — यही चलेगा */
+/* v5.6.19: फुल हाउस विजेता दर्ज करो — 1/2/3 जीत का सिस्टम */
+function registerFullWinner(name, viaHost){
+  if(winnerFull) return;                        /* गेम खत्म — कुछ नहीं */
+  if(fullWinners.indexOf(name) !== -1) return;   /* एक ही आदमी दो बार नहीं */
+  fullWinners.push(name);
+  addWinnerToBoard(name);
+  const tgt = fullTarget();
+  const n = fullWinners.length;
+  const row = document.createElement('div');
+  row.className = 'claim-row';
+  row.style.borderLeftColor = '#2e7d32';
+  row.textContent = (viaHost ? '✅ मंज़ूर — 🏆 ' : '🎉 टिकट पूरी — अपने आप विजेता: 🏆 ') +
+    name + ' फुल हाउस ' + n + '/' + tgt + ' (' + new Date().toLocaleTimeString('hi-IN') + ')';
+  $('claims').prepend(row);
+  $('winner-name').textContent = fullWinners.join(', ');
+  $('winner-box').classList.add('show');
+  $('winner-big-name').textContent = name;
+  $('winner-big-sub').textContent = '🏆 फुल हाउस ' + n + '/' + tgt + ' — विजेता: ' + name + ' 🏆';
+  $('winner-big').classList.add('show');
+  confettiBurst();
+  beep(1200, 0.45);
+  announceWinnerVoice(name, 'फुल हाउस');
+  saveHostState();
+  if(n >= tgt){
+    gameOverNow(name, viaHost);   /* आख़िरी विजेता — गेम बंद */
+  } else {
+    /* गेम जारी रहेगा — सबको बताओ */
+    broadcast({ type:'claim-result', ok:true, name:name, prize:'full', more:1, count:n, total:tgt });
+    setStatus('🏆 फुल हाउस ' + n + '/' + tgt + ': ' + name + ' — गेम जारी! अगले विजेता की प्रतीक्षा…');
+    toast('🏆 फुल हाउस ' + n + '/' + tgt + ': ' + name + ' — गेम जारी');
+    setTimeout(function(){ try{ $('winner-big').classList.remove('show'); }catch(e){} }, 3000);
+  }
+}
+
+/* गेम बंद करने का एक ही रास्ता (v5.6.19) */
 function gameOverNow(name, viaHost){
   if(winnerFull) return;
   winnerFull = name;
@@ -465,29 +510,16 @@ function gameOverNow(name, viaHost){
   $('next-btn').disabled = true;
   $('auto-btn').disabled = true;
   const dur = gameStartTime ? $('game-timer').textContent.replace('⏱ ', '') : '';
-  saveHistory(name, drawn.length, dur);
-  addWinnerToBoard(name);
+  const names = fullWinners.length ? fullWinners.join(', ') : name;
+  saveHistory(names, drawn.length, dur);
   broadcast({ type:'claim-result', ok:true, name:name, prize:'full' });
-  setTimeout(function(){ broadcast({ type:'game-over', winner:name }); }, 3600);
-  const row = document.createElement('div');
-  row.className = 'claim-row';
-  row.style.borderLeftColor = '#2e7d32';
-  row.textContent = (viaHost ? '✅ मंज़ूर — 🏆 ' : '🎉 टिकट पूरी — अपने आप विजेता: 🏆 ') +
-    name + ' फुल हाउस (' + new Date().toLocaleTimeString('hi-IN') + ')';
-  $('claims').prepend(row);
-  $('winner-name').textContent = name;
-  $('winner-box').classList.add('show');
-  $('winner-big-name').textContent = name;
-  $('winner-big').classList.add('show');
-  confettiBurst();
-  beep(1200, 0.5);
+  setTimeout(function(){ broadcast({ type:'game-over', winner:names }); }, 3600);
   /* बोर्ड साफ़ — नया शब्द बंद (v5.6.16) */
   const el = $('current-shabd');
   el.classList.remove('pop');
   el.textContent = '🏆';
-  $('word-sub').textContent = 'गेम समाप्त — विजेता: ' + name + '। नया गेम: "🔄 नया गेम (रीसेट)" दबाएँ';
-  setStatus('🏆 फुल हाउस विजेता: ' + name + ' — गेम समाप्त। अगला राउंड "नया गेम" से शुरू करें।');
-  announceWinnerVoice(name, 'फुल हाउस');
+  $('word-sub').textContent = 'गेम समाप्त — विजेता: ' + names + '। नया गेम: "🔄 नया गेम (रीसेट)" दबाएँ';
+  setStatus('🏆 फुल हाउस विजेता: ' + names + ' — गेम समाप्त। अगला राउंड "नया गेम" से शुरू करें।');
   clearHostState();
 }
 
@@ -498,7 +530,7 @@ function checkAutoFullHouse(){
     const t = players[id] && players[id].ticket;
     if(Array.isArray(t) && t.length === JT_CONFIG.TICKET_CELLS &&
        t.every(function(w){ return drawnSet.has(w); })){
-      gameOverNow(players[id].name || 'खिलाड़ी', false);
+      registerFullWinner(players[id].name || 'खिलाड़ी', false);
     }
   });
 }
@@ -775,8 +807,8 @@ function approveClaim(){
     saveHostState();
     return;
   }
-  /* v5.6.16: एक ही रास्ता — गेम खत्म, बोर्ड साफ़, नए शब्द बंद */
-  gameOverNow(name, true);
+  /* v5.6.19: फुल हाउस विजेता दर्ज — 1/2/3 जीत तक गेम चलेगा */
+  registerFullWinner(name, true);
 }
 
 function rejectClaim(){
@@ -798,6 +830,7 @@ $('winner-big-close').addEventListener('click', function(){ $('winner-big').clas
 
 function resetBoard(){
   pendingClaim = null;
+  fullWinners = [];
   const el = $('current-shabd');
   el.classList.remove('pop');
   el.textContent = '…';
@@ -896,6 +929,12 @@ $('start-btn').addEventListener('click', function(){
   let gw = 0;
   try{ gw = parseInt(($('game-words') && $('game-words').value) || '90', 10) || 0; }catch(e){ gw = 0; }
   try{ localStorage.setItem('jt_gamewords', String(gw)); }catch(e){}
+  /* v5.6.19: फुल हाउस जीत की संख्या याद रखो */
+  try{
+    var fc = parseInt(($('full-count') && $('full-count').value) || '1', 10);
+    if(fc !== 2 && fc !== 3) fc = 1;
+    localStorage.setItem('jt_full_count', String(fc));
+  }catch(e){}
   const poolAll = SHABD_LIST.slice();
   gamePool = (gw > 0 && gw < poolAll.length) ? shuffle(poolAll).slice(0, gw) : poolAll;
   deck = shuffle(gamePool.slice());
@@ -909,7 +948,7 @@ $('start-btn').addEventListener('click', function(){
   startTimer();
   saveHostState();
   $('resume-banner').style.display = 'none';
-  setStatus('✅ गेम शुरू — ' + gamePool.length + ' शब्दों में से गेम चलेगा। सबको डिजिटल टिकट भेज दए गए। अब शब्द निकालें।');
+  setStatus('✅ गेम शुरू — ' + gamePool.length + ' शब्दों में से गेम चलेगा। फुल हाउस जीत: ' + fullTarget() + '। अब शब्द निकालें।');
 });
 $('next-btn').addEventListener('click', function(){
   drawWord();
@@ -918,6 +957,16 @@ $('next-btn').addEventListener('click', function(){
 $('auto-btn').addEventListener('click', function(){
   if(autoTimer) stopAuto(); else startAuto();
 });
+try{
+  var _fc0 = fullTarget();
+  if($('full-count')) $('full-count').value = String(_fc0);
+  if($('full-count')) $('full-count').addEventListener('change', function(){
+    var v = parseInt($('full-count').value, 10);
+    if(v !== 2 && v !== 3) v = 1;
+    try{ localStorage.setItem('jt_full_count', String(v)); }catch(e){}
+    toast('🏆 फुल हाउस जीत: ' + v + ' विजेता ' + (v > 1 ? '— गेम ' + v + ' जीत तक चलेगा' : '— पहली जीत पर बंद'));
+  });
+}catch(e){}
 $('newgame-btn').addEventListener('click', function(){
   started = false; winnerFull = null; lastWord = null;
   prizeWinners = {}; renderPrizeWinners();
