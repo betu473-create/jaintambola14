@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>डायरी लें — जैन ताम्बोला</title>
+<style>
+body{margin:0;font-family:system-ui,'Noto Sans Devanagari',sans-serif;background:linear-gradient(160deg,#fff8ec,#ffe0b2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+.card{background:#fffdf7;border:1.5px solid #ffe0b2;border-radius:20px;padding:26px 20px;max-width:400px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(120,80,40,.15)}
+h1{font-size:1.15rem;color:#4e342e;margin:0 0 6px}
+p{color:#795548;font-size:.95rem;line-height:1.6;margin:8px 0}
+.btn{display:block;background:#e65100;color:#fff;border:none;border-radius:12px;padding:13px 16px;font-size:1rem;font-weight:800;text-decoration:none;margin:10px 0 4px;cursor:pointer}
+.btn.ghost{background:#fff;color:#5d4037;border:2px solid #e0c9a6}
+.spin{font-size:2rem;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="icon" class="spin">⏳</div>
+  <h1>🔗 डायरी लें (दूसरे उपकरण से)</h1>
+  <p id="msg">जुड़ा जा रहा है…</p>
+  <div id="done" style="display:none">
+    <a class="btn" href="./host.html">🎮 होस्ट स्क्रीन खोलें</a>
+    <a class="btn ghost" href="./index.html">🏠 होम पर जाएँ</a>
+  </div>
+</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
+<script>
+/* डायरी लें (v5.7.0) — भेजने वाले उपकरण से ticket register wireless आता है */
+(function(){
+  var msg = document.getElementById('msg');
+  var done = document.getElementById('done');
+  var icon = document.getElementById('icon');
+  var m = location.search.match(/[?&]c=([A-Za-z0-9]+)/);
+  var code = m ? m[1].toUpperCase() : '';
+  if(!code){ icon.textContent = '❌'; msg.textContent = 'लिंक में कोड नहीं मिला — नया लिंक लें।'; return; }
+  if(typeof Peer === 'undefined'){ icon.textContent = '📡'; msg.textContent = 'इंटरनेट नहीं मिला — पेज दोबारा खोलें।'; return; }
+  var peer = new Peer();
+  var got = false;
+  peer.on('open', function(){
+    msg.textContent = 'भेजने वाले से हाथ मिलाया जा रहा है…';
+    var c = peer.connect('JTPAIR-' + code, { reliable: true });
+    c.on('open', function(){
+      msg.textContent = 'डायरी माँगी जा रही है…';
+      try{ c.send({ type: 'want-diary' }); }catch(e){}
+    });
+    c.on('data', function(d){
+      if(got || !d || d.type !== 'diary') return;
+      got = true;
+      try{
+        var reg = d.reg || {};
+        var old = {};
+        try{ old = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
+        var news = 0;
+        Object.keys(reg).forEach(function(k){ if(!old[k]) news++; old[k] = reg[k]; });
+        try{ localStorage.setItem('jt_paper_tickets', JSON.stringify(old)); }catch(e){}
+        if(d.fullCount){ try{ localStorage.setItem('jt_full_count', d.fullCount); }catch(e){} }
+        if(d.prizes){ try{ localStorage.setItem('jt_prizes', d.prizes); }catch(e){} }
+        icon.textContent = '✅';
+        msg.innerHTML = 'डायरी आ गई!<br>कुल <b>' + Object.keys(old).length + '</b> टिकट सेव (नई: ' + news + ')।<br>अब इसी उपकरण से काग़ज़ टिकट जाँच भी चलेगी।';
+        done.style.display = 'block';
+      }catch(e){ icon.textContent = '❌'; msg.textContent = 'डायरी सेव नहीं हो पाई — दोबारा कोशिश करें।'; }
+      try{ c.close(); }catch(e){}
+      try{ peer.destroy(); }catch(e){}
+    });
+  });
+  setTimeout(function(){
+    if(!got){
+      icon.textContent = '⌛';
+      msg.textContent = 'जुड़ नहीं पाया — भेजने वाले का पेज खुला है ना? लिंक 10 मिनट में बंद हो जाता है — नया लिंक लें।';
+    }
+  }, 15000);
+  peer.on('error', function(){
+    if(!got){
+      icon.textContent = '❌';
+      msg.textContent = 'कनेक्शन नहीं हो पाया — लिंक का समय निकल गया या भेजने वाला बंद है। नया लिंक लें।';
+    }
+  });
+})();
+</script>
+</body>
+</html>
