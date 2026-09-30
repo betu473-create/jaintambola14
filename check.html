@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔍 जाँच स्क्रीन — जैन ताम्बोला</title>
+<style>
+body{margin:0;font-family:system-ui,'Noto Sans Devanagari',sans-serif;background:linear-gradient(160deg,#fff8ec,#ffe0b2);min-height:100vh;box-sizing:border-box;padding:18px}
+.wrap{max-width:520px;margin:0 auto}
+.card{background:#fffdf7;border:1.5px solid #ffe0b2;border-radius:20px;padding:22px;box-shadow:0 12px 40px rgba(120,80,40,.12);margin-bottom:14px}
+h1{font-size:1.2rem;color:#4e342e;margin:0 0 4px}
+h2{font-size:1.05rem;color:#4e342e;margin:0 0 8px}
+p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
+.inp{width:100%;box-sizing:border-box;padding:14px;border:1.5px solid #e0c9a6;border-radius:12px;font-size:1.3rem;font-weight:800;text-align:center;letter-spacing:4px;text-transform:uppercase;background:#fff;color:#4e342e;font-family:inherit}
+.btn{display:block;width:100%;background:#e65100;color:#fff;border:none;border-radius:12px;padding:14px;font-size:1.05rem;font-weight:800;font-family:inherit;cursor:pointer;margin-top:10px;text-decoration:none;text-align:center;box-sizing:border-box}
+.btn.small{padding:10px;font-size:.95rem}
+.btn.green{background:#2e7d32}
+.live{display:flex;justify-content:space-between;align-items:center;background:#fff3e0;border-radius:12px;padding:10px 14px;font-weight:800;color:#5d4037;margin-bottom:14px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:pu 1.5s infinite}
+@keyframes pu{50%{opacity:.4}}
+.numinp{width:130px;padding:12px;border:1.5px solid #e0c9a6;border-radius:12px;font-size:1.3rem;font-weight:900;text-align:center;background:#fff;color:#4e342e;font-family:inherit}
+.ok{background:#c8e6c9;color:#1b5e20}
+.bad{background:#ffcdd2;color:#b71c1c}
+.chip{display:inline-block;margin:3px;padding:6px 10px;border-radius:8px;font-size:.9rem;font-weight:800}
+.muted{color:#8d6e63;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- जुड़ने वाला कार्ड -->
+  <div class="card" id="join-card">
+    <h1>🔍 जाँच स्क्रीन (लैपटॉप के लिए)</h1>
+    <p>होस्ट के फ़ोन से जुड़कर यहाँ से काग़ज़ टिकट की जाँच करें — गेम होस्ट फ़ोन पर ही चलेगा।</p>
+    <input class="inp" id="code-input" placeholder="रूम कोड (6 अक्षर)" maxlength="6" autocomplete="off">
+    <button class="btn" id="join-btn" type="button">जुड़ें</button>
+  </div>
+
+  <!-- जाँच कंसोल -->
+  <div id="console" style="display:none">
+    <div class="live"><span><span class="dot"></span>रूम <b id="room-show">—</b> से जुड़े</span><span>आए शब्द: <b id="drawn-count">0</b></span></div>
+
+    <div class="card">
+      <h2>🔍 काग़ज़ टिकट जाँच</h2>
+      <p style="margin-top:0">जिसने क्लेम किया, उसकी छपी टिकट का नंबर डालें:</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input class="numinp" id="tk-num" inputmode="numeric" placeholder="टिकट #">
+        <button class="btn small" id="tk-check" type="button" style="width:auto;padding:12px 22px">जाँच करें</button>
+      </div>
+      <div id="tk-result" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📜 आए हुए शब्द</h2>
+      <p style="margin-top:0" id="words-list">अभी कोई शब्द नहीं आया</p>
+    </div>
+
+    <p class="muted" style="text-align:center">शब्द होस्ट फ़ोन पर निकलते ही यहाँ अपने आप दिखेंगे • ॥ वंदे श्री गुरू तारणम् ॥</p>
+  </div>
+
+</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"><\/script>');}</script>
+<script>
+/* जाँच स्क्रीन (v5.8.0) — होस्ट फ़ोन से डायरी + लाइव शब्द लेती है, टिकट नंबर से जाँच करती है */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var conn = null, reg = {}, drawnSet = {}, drawnArr = [];
+
+  function renderWords(){
+    $('drawn-count').textContent = drawnArr.length;
+    $('words-list').textContent = drawnArr.length ? drawnArr.join(' • ') : 'अभी कोई शब्द नहीं आया';
+  }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return c === '&' ? '&' : (c === '<' ? '<' : '>'); }); }
+
+  function runCheck(){
+    var num = parseInt($('tk-num').value, 10);
+    var res = $('tk-result');
+    if(!num || num < 1){ res.innerHTML = '<b style="color:#c62828">टिकट नंबर डालें</b>'; return; }
+    var words = reg[num];
+    if(!words || !words.length){
+      res.innerHTML = '<b style="color:#c62828">⚠️ टिकट #' + num + ' होस्ट फ़ोन के रजिस्टर में नहीं मिली</b>' +
+        '<div class="muted" style="margin-top:4px">जाँच उसी फ़ोन की टिकटों पर चलती है जिन्हें Print Center से बनाया गया था (रजिस्टर में अभी ' + Object.keys(reg).length + ' टिकट हैं)।</div>';
+      return;
+    }
+    var ok = 0, left = [];
+    var chips = words.map(function(w){
+      var hit = !!drawnSet[w];
+      if(hit) ok++; else left.push(w);
+      return '<span class="chip ' + (hit ? 'ok' : 'bad') + '">' + (hit ? '✅ ' : '❌ ') + esc(w) + '</span>';
+    }).join('');
+    var verdict = (ok === words.length)
+      ? '<div class="ok" style="border-radius:12px;padding:12px;font-weight:900;font-size:1.05rem">🎉 टिकट #' + num + ' पूरी बन गई! (' + ok + '/' + words.length + ') — क्लेम सही!</div>'
+      : '<div class="bad" style="border-radius:12px;padding:12px;font-weight:900;font-size:1.05rem">❌ टिकट #' + num + ' — अभी ' + (words.length - ok) + ' शब्द बचे हैं (' + ok + '/' + words.length + ') — क्लेम अभी सही नहीं</div>';
+    var leftBox = left.length ? '<div style="margin-top:8px;font-size:.9rem;color:#4e342e"><b>अभी बचे शब्द:</b> ' + left.map(esc).join(' • ') + '</div>' : '';
+    res.innerHTML = verdict + '<div style="margin-top:8px">' + chips + '</div>' + leftBox;
+  }
+  $('tk-check').addEventListener('click', runCheck);
+  $('tk-num').addEventListener('keydown', function(e){ if(e.key === 'Enter') runCheck(); });
+
+  function join(){
+    var code = ($('code-input').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if(!/^[A-Z0-9]{6}$/.test(code)){ alert('रूम कोड सही नहीं है (6 अक्षर/अंक) — होस्ट से पूछें'); return; }
+    if(typeof Peer === 'undefined'){ alert('इंटरनेट नहीं मिला — पेज दोबारा खोलें'); return; }
+    $('join-btn').textContent = 'जुड़ा जा रहा है…';
+    var peer = new Peer();
+    var c = peer.connect('JT-' + code, { reliable: true });
+    var opened = false;
+    c.on('open', function(){
+      opened = true;
+      conn = c;
+      c.send({ type: 'join', name: 'जाँच', screen: true, checker: true, deviceId: 'checker-' + Date.now() });
+    });
+    c.on('data', function(d){
+      if(!d) return;
+      if(d.type === 'checker-data'){
+        reg = d.reg || {};
+        (d.drawn || []).forEach(function(w){ drawnSet[w] = true; drawnArr.push(w); });
+        $('join-card').style.display = 'none';
+        $('console').style.display = 'block';
+        $('room-show').textContent = code;
+        renderWords();
+        $('tk-result').innerHTML = '<div class="ok" style="border-radius:12px;padding:10px;font-weight:800">✅ जुड़ गए! रजिस्टर में ' + Object.keys(reg).length + ' टिकट मिलीं — जाँच शुरू करें।</div>';
+      }
+      else if(d.type === 'word' && d.word){
+        if(!drawnSet[d.word]){ drawnSet[d.word] = true; drawnArr.push(d.word); }
+        renderWords();
+      }
+    });
+    c.on('close', function(){
+      $('console').style.display = 'none';
+      $('join-card').style.display = 'block';
+      $('join-btn').textContent = 'दोबारा जुड़ें';
+      alert('होस्ट से कनेक्शन टूट गया — दोबारा जुड़ें दबाएँ');
+    });
+    setTimeout(function(){
+      if(!opened){ $('join-btn').textContent = '❌ नहीं जुड़ पाए — कोड देखें / दोबारा दबाएँ'; }
+    }, 12000);
+  }
+  $('join-btn').addEventListener('click', join);
+
+  var urlRoom = (new URLSearchParams(location.search).get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if(urlRoom){ $('code-input').value = urlRoom; setTimeout(join, 300); }
+})();
+</script>
+</body>
+</html>
