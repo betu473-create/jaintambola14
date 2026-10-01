@@ -103,9 +103,23 @@
     <p class="muted" id="upd-status" style="text-align:center;margin:8px 0 0;min-height:1.2em"></p>
   </div>
 
+  <!-- 💾 बैकअप / वापस लाएँ (v5.8.6) -->
+  <div class="card">
+    <h2>💾 बैकअप (data सुरक्षित रखें)</h2>
+    <p class="muted" style="margin:0 0 10px;font-size:.92rem">Chrome का data/cache clear हो जाए तो आपका PIN, डायरी और सेटिंग्स चले जाते हैं। इसलिए समय-समय पर बैकअप बना लीजिए — ज़रूरत पड़ने पर एक टैप में सब वापस आ जाएगा।</p>
+    <button class="btn" id="bk-make" type="button" style="width:100%">💾 बैकअप बनाएँ</button>
+    <textarea id="bk-box" placeholder="यहाँ आपका बैकअप कोड आएगा — इसे कॉपी करके WhatsApp (अपने आप को) या Notes में सेव कर लें" style="width:100%;min-height:90px;margin-top:10px;border:1.5px solid #ffcc80;border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:.78rem"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" id="bk-copy" type="button" style="flex:1;font-size:.9rem">📋 कॉपी करें</button>
+      <button class="btn" id="bk-restore" type="button" style="flex:1;font-size:.9rem;background:#2e7d32">🔄 वापस लाएँ</button>
+    </div>
+    <p class="muted" id="bk-status" style="text-align:center;margin:8px 0 0;min-height:1.2em"></p>
+    <p class="muted" style="margin:8px 0 0;font-size:.82rem">⚠️ बैकअप में PIN जैसी चीज़ें होती हैं — किसी और को न भेजें; सिर्फ़ अपने Notes या अपने ही WhatsApp में रखें।</p>
+  </div>
+
   <div class="card">
     <h2>ℹ️ ऐप के बारे में</h2>
-    <div class="sw-row"><span>संस्करण</span><span style="color:#e65100">v5.8.5</span></div>
+    <div class="sw-row"><span>संस्करण</span><span style="color:#e65100">v5.8.6</span></div>
     <div class="sw-row"><span>इंटरनेट लगा हो तो ऑनलाइन गेम</span><span style="color:#2e7d32">✓</span></div>
     <div class="sw-row"><span>इंस्टॉल के बाद ऑफ़लाइन भी चलती है (PWA)</span><span style="color:#2e7d32">✓</span></div>
     <div class="sw-row"><span>एक फोन = एक ही लाइव डिजिटल टिकट</span><span style="color:#2e7d32">✓</span></div>
@@ -184,6 +198,45 @@
     });
   });
 })();
+
+/* 💾 बैकअप / वापस लाएँ (v5.8.6) */
+(function(){
+  var mk = document.getElementById('bk-make');
+  var box = document.getElementById('bk-box');
+  var cp = document.getElementById('bk-copy');
+  var rs = document.getElementById('bk-restore');
+  var st = document.getElementById('bk-status');
+  if(!mk || !box) return;
+  function grab(){
+    var out = {};
+    try{ for(var i=0;i<localStorage.length;i++){ var k = localStorage.key(i); if(k && k.indexOf('jt') === 0) out[k] = localStorage.getItem(k); } }catch(e){}
+    return out;
+  }
+  mk.addEventListener('click', function(){
+    var data = { app:'jain-tambola', v:1, time:Date.now(), keys: grab() };
+    box.value = 'JTBAK1:' + JSON.stringify(data);
+    st.textContent = '✅ बैकअप बन गया — नीचे से कॉपी करके सुरक्षित रखें';
+    try{ box.focus(); box.select(); document.execCommand('copy'); st.textContent = '✅ बैकअप बन गया और कॉपी भी हो गया — अब कहीं सेव कर लें'; }catch(e){}
+  });
+  cp.addEventListener('click', function(){
+    if(!box.value){ st.textContent = 'पहले "बैकअप बनाएँ" दबाएँ'; return; }
+    try{ box.focus(); box.select(); document.execCommand('copy'); st.textContent = '📋 कॉपी हो गया — अब WhatsApp/Notes में सेव कर लें'; }catch(e){ st.textContent = 'कॉपी नहीं हुआ — हाथ से select करके Copy दबाएँ'; }
+  });
+  rs.addEventListener('click', function(){
+    var raw = (box.value || '').trim();
+    if(!raw){ st.textContent = 'पहले अपना बैकअप कोड यहाँ पेस्ट करें'; return; }
+    if(raw.indexOf('JTBAK1:') === 0) raw = raw.slice(7);
+    var data;
+    try{ data = JSON.parse(raw); }catch(e){ st.textContent = '❌ यह सही बैकअप कोड नहीं लगता'; return; }
+    if(!data || !data.keys){ st.textContent = '❌ बैकअप खाली या गलत है'; return; }
+    if(!confirm('इस फ़ोन का मौजूदा data बदलकर बैकअप वाला data लाया जाएगा। ठीक है?')) return;
+    var n = 0;
+    for(var k in data.keys){ try{ localStorage.setItem(k, data.keys[k]); n++; }catch(e){} }
+    st.textContent = '✅ ' + n + ' चीज़ें वापस आ गईं — ऐप रीस्टार्ट हो रही है';
+    setTimeout(function(){ location.reload(); }, 1200);
+  });
+})();
+
 </script>
 <div class="toast" id="saved-toast"></div>
 </body>
