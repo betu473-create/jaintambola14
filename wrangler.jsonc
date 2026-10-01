@@ -1,0 +1,9 @@
+{
+  // Jain Tambola — Cloudflare Workers static assets config
+  // Ye file repo ko ek static site ki tarah serve karne ke liye hai
+  "name": "jaintambola14",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./"
+  }
+}
