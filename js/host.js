@@ -23,6 +23,7 @@ let claimsFirst = true;
 let muted = false;
 let gameStartTime = null, timerInterval = null;
 let musicAudio = null;
+var musicOn = false;
 let lastWord = null;
 let gamePool = [];   /* इस गेम के लिए चुने गए शब्द — डेक और टिकट दोनों यहीं से बनते हैं (v5.6.2) */
 
@@ -362,9 +363,11 @@ $('music-file').addEventListener('change', function(e){
 });
 $('music-play').addEventListener('click', function(){
   if(musicAudio){ musicAudio.play().catch(function(){}); toast('🎵 संगीत चल रहा है'); }
+  musicOn = true; broadcast({ type:'music', on:true });
 });
 $('music-stop').addEventListener('click', function(){
   if(musicAudio){ musicAudio.pause(); toast('🎵 संगीत रुक गया'); }
+  musicOn = false; broadcast({ type:'music', on:false });
 });
 
 /* ==================== म्यूज़िक: डकिंग + म्यूट (v5.8.10) ==================== */
@@ -643,6 +646,7 @@ function sendTicketTo(conn){
   const nums = words.map(function(w){ return shabdNumber(w); });   /* क्रमांक भी भेजो (v5.6.9) */
   try{
     conn.send({ type:'ticket', words:words, nums:nums, drawn:drawn, prizes:prizes, winners:prizeWinners });
+        try{ conn.send({ type:'music', on:musicOn }); }catch(e){}
   }catch(e){}
 }
 

@@ -62,6 +62,24 @@ function toast(msg){
 function setPStatus(m){ $('p-status').textContent = m; }
 function setGStatus(m){ $('g-status').textContent = m; }
 
+/* ==================== णमोकार मंत्र (होस्ट के साथ) — v5.8.12 ==================== */
+var musicAudio = null, MUSIC_VOL = 0.25, MUSIC_DUCK = 0.1, musicOn = false, musicDuckTimer = null;
+function musicPlay(){
+  try{
+    if(!musicAudio){ musicAudio = new Audio('audio/mantra.mp3'); musicAudio.loop = true; }
+    musicAudio.volume = muted ? 0 : MUSIC_VOL;
+    musicAudio.play().catch(function(){});
+  }catch(e){}
+}
+function musicPause(){ try{ if(musicAudio) musicAudio.pause(); }catch(e){} }
+function musicDuck(){
+  if(!musicAudio || !musicOn || muted) return;
+  try{ musicAudio.volume = MUSIC_DUCK; }catch(e){}
+  if(musicDuckTimer) clearTimeout(musicDuckTimer);
+  musicDuckTimer = setTimeout(function(){ musicDuckTimer = null; try{ if(musicAudio && musicOn && !muted) musicAudio.volume = MUSIC_VOL; }catch(e){} }, 1900);
+}
+
+
 /* ==================== चैट ==================== */
 function addChatMsg(name, msg, cls){
   const box = $('chat-msgs');
@@ -176,6 +194,7 @@ function onWord(w, num, pack){
   lastPack = pack ? 1 : 0;   /* v5.6.15: पैक-आवाज़ */
   repeatUsed.delete(w);   /* नया शब्द आया तो उसका रिपीट उपलब्ध */
   if(!muted){
+    musicDuck();
     beep(880, 0.3);
     if(pack && num){ speakPack(num, announcePhrase(num, w)); }
     else{ try{ speakWord(announcePhrase(num, w)); }catch(e){ speakWord(w); } }
@@ -211,6 +230,7 @@ function resetLocal(){
 
 function onData(d){
   if(!d || typeof d !== 'object') return;
+  if(d.type === 'music'){ musicOn = !!d.on; if(musicOn) musicPlay(); else musicPause(); return; }
   if(d.type === 'start'){
     resetLocal();
     setGStatus('🎮 गेम शुरू! आपकी डिजिटल टिकट आ रही है…');
@@ -545,6 +565,7 @@ $('mute-btn').addEventListener('click', function(){
   muted = !muted;
   if(muted){ stopSpeaking(); }
   else{ unlockSpeech(); speakWord('अरिहंत', 1); }
+  try{ if(musicAudio) musicAudio.volume = muted ? 0 : MUSIC_VOL; }catch(e){}
   $('mute-btn').textContent = muted ? '🔇 आवाज़ बंद' : '🔊 आवाज़ चालू';
 });
 $('chat-send').addEventListener('click', sendChat);
