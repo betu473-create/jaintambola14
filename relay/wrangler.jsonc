@@ -1,0 +1,15 @@
+{
+  // जैन ताम्बोला — RELAY (Cloudflare Worker + Durable Object)
+  // Ek "room" = ek Durable Object (SQLite-backed, free plan par available)
+  "name": "jain-tambola-relay",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "RoomDO" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["RoomDO"] }
+  ]
+}
