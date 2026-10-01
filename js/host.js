@@ -388,6 +388,16 @@ if(_mmBtn) _mmBtn.addEventListener('click', function(){
 });
 musicMuteUI();
 
+/* बिल्ट-इन णमोकार मंत्र (v5.8.11) — हर बार mp3 चुनने की ज़रूरत नहीं */
+try{
+  musicAudio = new Audio('audio/mantra.mp3');
+  musicAudio.loop = true;
+  musicAudio.volume = musicMuted ? 0 : MUSIC_VOL;
+  if($('music-play')) $('music-play').style.display = 'inline-block';
+  if($('music-stop')) $('music-stop').style.display = 'inline-block';
+}catch(e){}
+
+
 
 /* ==================== शब्द जोड़ना ==================== */
 var __jtAddBtn = null;
