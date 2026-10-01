@@ -23,9 +23,9 @@
 /* ---- टिकट शीट ---- */
 .tickets-page{padding:4mm}
 .pt-ticket{border:1.5px solid #333;border-radius:8px;padding:3.5mm;page-break-inside:avoid;background:#fff}
-.pt-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #999;padding-bottom:1.5mm;margin-bottom:2.5mm;font-weight:800}
-.pt-head .h{font-size:.95em}
-.pt-head .s{font-size:.75em;color:#555}
+.pt-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;border-bottom:1px solid #999;padding-bottom:1.5mm;margin-bottom:2.5mm;font-weight:800}
+.pt-head .h{font-size:.95em;text-align:center}
+.pt-head .s{font-size:.7em;color:#555;text-align:right}
 .pt-name{border-bottom:1px dotted #666;min-height:8mm;margin:1.5mm 0 2.5mm;font-size:.7em;color:#888}
 .pt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm}
 .pt-cell{border:1px solid #555;border-radius:4px;min-height:15mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1mm}
@@ -147,10 +147,10 @@
       cells += '<div class="pt-cell"><span class="n">क्र. ' + shabdNumber(w) + '</span><span class="w">' + esc(w) + '</span></div>';
     });
     return '<div class="pt-ticket">' +
-      '<div class="pt-head"><span class="h">॥ जैन ताम्बोला ॥</span><span class="s">टिकट #' + serial + '</span></div>' +
+      '<div class="pt-head"><span class="sp"></span><span class="h">॥ जैन ताम्बोला ॥</span><span class="s">टिकट नं.' + serial + '</span></div>' +
       '<div class="pt-name">नाम: ____________________</div>' +
       '<div class="pt-grid">' + cells + '</div>' +
-      '<div class="pt-foot">Designed by Himanshu Jain (7747957576) • ॥ वंदे श्री गुरू तारणम् ॥</div>' +
+      '<div class="pt-foot">Designed by Himanshu Jain (7747957576)<br>॥ वंदे श्री गुरू तारणम् ॥</div>' +
       '</div>';
   }
   function genTickets(save){
