@@ -367,6 +367,28 @@ $('music-stop').addEventListener('click', function(){
   if(musicAudio){ musicAudio.pause(); toast('🎵 संगीत रुक गया'); }
 });
 
+/* ==================== म्यूज़िक: डकिंग + म्यूट (v5.8.10) ==================== */
+var MUSIC_VOL = 0.25, MUSIC_DUCK = 0.1, musicMuted = false, musicDuckTimer = null;
+function musicDuck(){
+  if(!musicAudio || musicMuted) return;
+  try{ musicAudio.volume = MUSIC_DUCK; }catch(e){}
+  if(musicDuckTimer) clearTimeout(musicDuckTimer);
+  musicDuckTimer = setTimeout(function(){
+    musicDuckTimer = null;
+    try{ if(musicAudio && !musicMuted) musicAudio.volume = MUSIC_VOL; }catch(e){}
+  }, 1900);
+}
+var _mmBtn = document.getElementById('music-mute');
+function musicMuteUI(){ if(_mmBtn) _mmBtn.textContent = musicMuted ? '🔇 आवाज़ बंद' : '🔉 आवाज़ चालू'; }
+if(_mmBtn) _mmBtn.addEventListener('click', function(){
+  musicMuted = !musicMuted;
+  try{ if(musicAudio) musicAudio.volume = musicMuted ? 0 : MUSIC_VOL; }catch(e){}
+  musicMuteUI();
+  toast(musicMuted ? '🔇 संगीत की आवाज़ बंद' : '🔉 संगीत की आवाज़ चालू');
+});
+musicMuteUI();
+
+
 /* ==================== शब्द जोड़ना ==================== */
 var __jtAddBtn = null;
 try{ __jtAddBtn = $('word-add-btn'); }catch(e){}
@@ -545,6 +567,7 @@ function drawWord(){
   drawnSet.add(w);
   lastWord = w;
   if(!muted){
+    musicDuck();
     beep(880, 0.35);
     /* नंबर + शब्द दोनों बोलो — जैसे असली ताम्बोले में (v5.6.3) */
     if(window.jtVoice && jtVoice.sayAnnounce){ jtVoice.sayAnnounce(num, w); }
