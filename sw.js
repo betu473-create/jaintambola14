@@ -7,7 +7,7 @@
    - नया कोड अपलोड करने के बाद CACHE नंबर बढ़ा दें
      (जैसे 'jain-tambola-v4' से 'jain-tambola-v5')
    ============================================================ */
-const CACHE = 'jain-tambola-v48';
+const CACHE = 'jain-tambola-v49';
 
 const ASSETS = [
   './',
@@ -28,6 +28,7 @@ const ASSETS = [
   './js/host.js',
   './js/player.js',
   './js/pwa.js',
+  './js/net.js',
   './js/voice.js',
   './manifest.json',
   './icons/icon-192.png',

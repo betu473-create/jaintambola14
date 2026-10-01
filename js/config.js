@@ -7,7 +7,7 @@ const JT_CONFIG = {
      जिस पते पर खुला है उसी के हिसाब से लिंक बनाएगा
      (Netlify और GitHub Pages — दोनों पर सही चलेगा) */
   SITE_URL: '',
-  RELAY_URL: '',   /* (optional) 150+ players ke liye relay URL - khaali = PeerJS */
+  RELAY_URL: 'wss://jain-tambola-relay.betu473.workers.dev',   /* (optional) 150+ players ke liye relay URL - khaali = PeerJS */
 
   SPEAK_TIMES: 1,       /* हर शब्द कितनी बार बोला जाए */
   SPEAK_LANG: 'hi-IN',  /* हिंदी आवाज़ (Web Speech API) */
