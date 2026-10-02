@@ -187,15 +187,8 @@
     });
   }
   b.addEventListener('click', function(){
-    st.textContent = '⏳ जाँच हो रही है…';
-    if(!('serviceWorker' in navigator)){ st.textContent = 'यह ब्राउज़र अपडेट समर्थित नहीं करता'; return; }
-    navigator.serviceWorker.getRegistration().then(function(reg){
-      if(!reg){ st.textContent = 'इंस्टॉल नहीं मिला — इंटरनेट पर एक बार खोलकर दोबारा कोशिश करें'; return; }
-      reg.update().then(function(){
-        var w = reg.waiting || reg.installing;
-        st.textContent = w ? '⏳ नया वर्ज़न आ रहा है — ऐप खुली रहने दें, खुद रीस्टार्ट हो जाएगी' : '✅ आपके पास नया वर्ज़न ही है';
-      }).catch(function(){ st.textContent = '❌ जाँच नहीं हो पाई — इंटरनेट देख लें'; });
-    });
+    if(window.jtCheckUpdate){ window.jtCheckUpdate(function(t){ st.textContent = t; }); }
+    else{ st.textContent = '❌ अपडेट सुविधा नहीं मिली — पेज दोबारा खोलें'; }
   });
 })();
 
