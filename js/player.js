@@ -72,6 +72,17 @@ function musicPlay(){
   }catch(e){}
 }
 function musicPause(){ try{ if(musicAudio) musicAudio.pause(); }catch(e){} }
+/* मंत्र audio unlock — join के टैप पर (v5.8.20) */
+function musicUnlock(){
+  try{
+    if(!musicAudio){ musicAudio = new Audio('audio/mantra.mp3'); musicAudio.loop = true; }
+    musicAudio.volume = 0;
+    var pr = musicAudio.play();
+    function after(){ try{ musicAudio.pause(); musicAudio.currentTime = 0; musicAudio.volume = muted ? 0 : MUSIC_VOL; }catch(e){} }
+    if(pr && pr.then){ pr.then(after).catch(function(){ try{ musicAudio.volume = muted ? 0 : MUSIC_VOL; }catch(e){} }); }
+    else{ setTimeout(after, 120); }
+  }catch(e){}
+}
 function musicDuck(){
   if(!musicAudio || !musicOn || muted) return;
   try{ musicAudio.volume = MUSIC_DUCK; }catch(e){}
@@ -533,7 +544,7 @@ function join(){
   if(!myName){ toast('कृपया अपना नाम लिखें'); return; }
   if(!/^[A-Z0-9]{6}$/.test(code)){ toast('रूम कोड सही नहीं है (6 अक्षर/अंक)'); return; }
   try{ localStorage.setItem('jt_name', myName); }catch(e){}
-  unlockSpeech();
+  unlockSpeech(); musicUnlock();
   beep(660, 0.2);
   myRoomCode = code;
   retryCount = 0;
