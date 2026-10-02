@@ -7,7 +7,7 @@
    - नया कोड अपलोड करने के बाद CACHE नंबर बढ़ा दें
      (जैसे 'jain-tambola-v4' से 'jain-tambola-v5')
    ============================================================ */
-const CACHE = 'jain-tambola-v63';
+const CACHE = 'jain-tambola-v64';
 
 const ASSETS = [
   './',
@@ -60,23 +60,36 @@ self.addEventListener('activate', function(e){
   );
 });
 
-/* फ़ेच: पहले कैश, नहीं मिले तो नेटवर्क (और नए को कैश में जोड़ो) */
+/* फ़ेच (v5.8.18):
+   - पेज/JS/CSS/JSON  ->  नेटवर्क पहले (online हो तो हमेशा ताज़ा; न मिले तो कैश)
+   - icon/audio       ->  कैश पहले (जल्दी खुले, bandwidth बचे) */
 self.addEventListener('fetch', function(e){
   const req = e.request;
   if(!req || !req.url || !/^https?:/i.test(req.url)) return;
   if(req.method !== 'GET') return;
-  e.respondWith(
-    caches.match(req).then(function(hit){
-      if(hit) return hit;
-      return fetch(req).then(function(res){
-        const copy = res.clone();
-        caches.open(CACHE).then(function(c){
-          try{ c.put(req, copy); }catch(err){}
+  let pathname = '';
+  try{ pathname = new URL(req.url).pathname; }catch(err){}
+  const isAsset = /\.(png|jpg|jpeg|webp|gif|svg|ico|mp3|wav|m4a|ogg)$/i.test(pathname);
+  if(isAsset){
+    e.respondWith(
+      caches.match(req).then(function(hit){
+        if(hit) return hit;
+        return fetch(req).then(function(res){
+          const copy = res.clone();
+          caches.open(CACHE).then(function(c){ try{ c.put(req, copy); }catch(err2){} });
+          return res;
         });
-        return res;
-      }).catch(function(){
-        return caches.match('./index.html');
-      });
+      })
+    );
+    return;
+  }
+  e.respondWith(
+    fetch(req).then(function(res){
+      const copy = res.clone();
+      caches.open(CACHE).then(function(c){ try{ c.put(req, copy); }catch(err2){} });
+      return res;
+    }).catch(function(){
+      return caches.match(req).then(function(hit){ return hit || caches.match('./index.html'); });
     })
   );
 });
