@@ -63,6 +63,9 @@ self.addEventListener('activate', function(e){
 /* फ़ेच (v5.8.18):
    - पेज/JS/CSS/JSON  ->  नेटवर्क पहले (online हो तो हमेशा ताज़ा; न मिले तो कैश)
    - icon/audio       ->  कैश पहले (जल्दी खुले, bandwidth बचे) */
+/* फ़ेच (v5.8.19):
+   - पेज/JS/CSS/JSON  ->  नेटवर्क पहले, cache:no-store (WebView का पुराना cache भी bypass)
+   - icon/audio       ->  कैश पहले (जल्दी खुले, bandwidth बचे) */
 self.addEventListener('fetch', function(e){
   const req = e.request;
   if(!req || !req.url || !/^https?:/i.test(req.url)) return;
@@ -84,7 +87,7 @@ self.addEventListener('fetch', function(e){
     return;
   }
   e.respondWith(
-    fetch(req).then(function(res){
+    fetch(req, {cache:'no-store'}).then(function(res){
       const copy = res.clone();
       caches.open(CACHE).then(function(c){ try{ c.put(req, copy); }catch(err2){} });
       return res;
