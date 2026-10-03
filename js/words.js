@@ -43,6 +43,22 @@ try{
     jtCustomList = true;
   }
 }catch(e){}
+/* v5.9: अदृश्य डुप्लिकेट हटाओ — दिखने में एक जैसे शब्द एक बार */
+(function(){
+  try{
+    function _nk(x){ return String(x||'').normalize('NFC').replace(/\s+/g,' ').trim().toLowerCase(); }
+    var seen = {}, out = [];
+    for(var i=0;i<SHABD_LIST.length;i++){
+      var k = _nk(SHABD_LIST[i]);
+      if(!k || seen[k]) continue;
+      seen[k] = 1; out.push(SHABD_LIST[i]);
+    }
+    if(out.length !== SHABD_LIST.length){
+      SHABD_LIST.splice(0, SHABD_LIST.length);
+      out.forEach(function(x){ SHABD_LIST.push(x); });
+    }
+  }catch(e){}
+})();
 window.JT_PACK_OK = !jtCustomList;
 
 /* ============================================================
