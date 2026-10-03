@@ -71,6 +71,7 @@
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn ghost" id="wl-reset" type="button" style="width:100%;margin-top:6px">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
+    <button class="btn ghost" id="wl-dedupe" type="button" style="width:100%;margin-top:6px">🔍 डुप्लिकेट शब्द ढूँढें / हटाएँ</button>
     <p class="wl-note">
       ✏️ = शब्द ठीक करें &nbsp;•&nbsp; ❌ = शब्द हटाएँ<br>
       बदलाव इसी फोन में सेव होंगे और <b>अगले नए गेम</b> में लागू होंगे।<br>
@@ -108,6 +109,13 @@
     toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
   }
 
+  function _nrm(x){ return String(x||'').normalize('NFC').replace(/\s+/g,' ').trim(); }
+  function _nkey(x){ return _nrm(x).toLowerCase(); }
+  function _findDup(w){
+    var k = _nkey(w);
+    for(var i=0;i<SHABD_LIST.length;i++){ if(_nkey(SHABD_LIST[i]) === k) return i; }
+    return -1;
+  }
   function saveList(){
     try{ localStorage.setItem('jt_word_list', JSON.stringify(SHABD_LIST)); }catch(e){}
   }
@@ -248,7 +256,7 @@
   function addWord(){
     var w = (newInp.value || '').trim();
     if(!w){ toast('पहले शब्द लिखिए'); return; }
-    var pos = SHABD_LIST.indexOf(w);
+    var pos = _findDup(w);
     if(pos !== -1){ toast('⚠️ यह शब्द पहले से है (क्र. ' + (pos+1) + ')'); return; }
     SHABD_LIST.push(w);
     saveList();
@@ -304,6 +312,23 @@
       render(search.value);
       toast('✏️ ठीक कर दिया गया');
     }
+  });
+
+  /* डुप्लिकेट ढूँढें/हटाएँ */
+  document.getElementById('wl-dedupe').addEventListener('click', function(){
+    var seen = {}, out = [], dups = [];
+    for(var i=0;i<SHABD_LIST.length;i++){
+      var k = _nkey(SHABD_LIST[i]);
+      if(!k) continue;
+      if(seen[k]){ dups.push(SHABD_LIST[i]); continue; }
+      seen[k] = 1; out.push(SHABD_LIST[i]);
+    }
+    if(!dups.length){ toast('✅ कोई डुप्लिकेट नहीं मिला — सूची साफ़ है'); return; }
+    if(!confirm(dups.length + ' डुप्लिकेट शब्द मिले:\n\n' + dups.join(', ') + '\n\nइन्हें हटा दें?')) return;
+    SHABD_LIST.splice(0, SHABD_LIST.length);
+    out.forEach(function(x){ SHABD_LIST.push(x); });
+    saveList(); updateHeader(); render(search.value);
+    toast('🗑️ ' + dups.length + ' डुप्लिकेट हटाए गए');
   });
 
   /* डिफ़ॉल्ट पर लौटें */
