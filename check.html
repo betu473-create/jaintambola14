@@ -55,6 +55,11 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
       <p style="margin-top:0" id="words-list">अभी कोई शब्द नहीं आया</p>
     </div>
 
+    <div class="card">
+      <h2>📚 पूरी शब्द सूची (<span id="wl-total">0</span>)</h2>
+      <p style="margin-top:0" id="wl-list">होस्ट से जुड़ते ही यहाँ पूरी शब्द सूची दिखेगी…</p>
+    </div>
+
     <p class="muted" style="text-align:center">शब्द होस्ट पर निकलते ही यहाँ अपने आप दिखेंगे • ॥ वंदे श्री गुरू तारणम् ॥</p>
   </div>
 
@@ -68,7 +73,13 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
 (function(){
   function $(id){ return document.getElementById(id); }
   var conn = null, reg = {}, drawnSet = {}, drawnArr = [];
+  var wordList = [];
 
+  function renderWordList(){
+    var t = $('wl-total'), el = $('wl-list');
+    if(t) t.textContent = wordList.length;
+    if(el) el.textContent = wordList.length ? wordList.join(' • ') : 'होस्ट से जुड़ते ही यहाँ पूरी शब्द सूची दिखेगी…';
+  }
   function renderWords(){
     $('drawn-count').textContent = drawnArr.length;
     $('words-list').textContent = drawnArr.length ? drawnArr.join(' • ') : 'अभी कोई शब्द नहीं आया';
@@ -124,6 +135,7 @@ p{color:#795548;font-size:.92rem;line-height:1.6;margin:6px 0}
           $('join-card').style.display = 'none';
           $('console').style.display = 'block';
           $('room-show').textContent = code;
+          if(Array.isArray(d.words) && d.words.length){ wordList = d.words; renderWordList(); }
           renderWords();
           $('tk-result').innerHTML = '<div class="ok" style="border-radius:12px;padding:10px;font-weight:800">✅ जुड़ गए! रजिस्टर में ' + Object.keys(reg).length + ' टिकट मिलीं — जाँच शुरू करें।</div>';
         }
