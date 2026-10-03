@@ -661,7 +661,7 @@ function handleData(conn, d){
         try{ conn.send({ type:'prizes', prizes:prizes, winners:prizeWinners }); }catch(e){}
         var creg = {};
         try{ creg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){}
-        try{ conn.send({ type:'checker-data', reg:creg, drawn:drawn }); }catch(e){}
+        try{ conn.send({ type:'checker-data', reg:creg, drawn:drawn, words:(typeof SHABD_LIST!=='undefined'&&SHABD_LIST?SHABD_LIST.slice():[]) }); }catch(e){}
         toast('🔍 जाँच स्क्रीन जुड़ गई');
         return;
       }
