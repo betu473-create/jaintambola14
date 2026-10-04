@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>शब्द सूची — जैन ताम्बोला</title>
+<meta name="description" content="जैन ताम्बोला की शब्द सूची — जोड़ें, हटाएँ, ठीक करें">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<meta name="theme-color" content="#e65100">
+<link rel="stylesheet" href="./css/style.css">
+<style>
+.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:14px 0}
+.wl-item{background:#fff;border:1.5px solid #ffe0b2;border-radius:10px;padding:8px 46px 8px 10px;font-size:.88rem;font-weight:600;color:#4e342e;display:flex;align-items:flex-start;gap:8px;line-height:1.35;position:relative}
+.wl-num{background:#e65100;color:#fff;border-radius:6px;padding:1px 7px;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:1px;min-width:28px;text-align:center}
+.wl-tools{position:absolute;top:3px;right:3px;display:flex;gap:1px}
+.wl-btn{border:none;background:transparent;cursor:pointer;font-size:.9rem;padding:3px 6px;border-radius:6px;line-height:1}
+.wl-btn:active{background:#ffe0b2}
+.wl-search{width:100%;padding:13px 14px;margin:8px 0;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fffdf7;color:#3e2723;box-sizing:border-box}
+.wl-count{font-size:.9rem;color:#8d6e63;text-align:center;margin:6px 0}
+.wl-add{display:flex;gap:8px;margin:10px 0}
+.wl-add input{flex:1;min-width:0;padding:13px 14px;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fffdf7;color:#3e2723;box-sizing:border-box}
+.wl-warn{background:#fff3e0;border:1.5px solid #ffb74d;color:#bf360c;border-radius:12px;padding:10px 12px;font-size:.9rem;font-weight:600;text-align:center;margin:10px 0;display:none}
+.wl-badge{display:inline-block;background:#e8f5e9;color:#1b5e20;border:1.5px solid #a5d6a7;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700;margin-top:6px}
+.wl-note{font-size:.85rem;color:#8d6e63;text-align:center;margin:12px 0;line-height:1.6}
+.wl-bulk{margin:12px 0;border:1.5px dashed #ffb74d;border-radius:12px;background:#fffdf7;padding:10px 12px}
+.wl-bulk>summary{cursor:pointer;font-weight:800;color:#bf360c;font-size:.95rem;padding:4px 0;list-style:none}
+.wl-bulk>summary::-webkit-details-marker{display:none}
+.wl-bulk[open]>summary{margin-bottom:4px}
+.wl-bulk-ta{width:100%;min-height:120px;margin:8px 0;padding:12px 14px;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fff;color:#3e2723;box-sizing:border-box;line-height:1.7;resize:vertical}
+.wl-bulk-ta:focus{outline:2px solid #ef6c00}
+.wl-bulk-result{font-size:.85rem;font-weight:700;color:#2e7d32;margin:8px 0 2px;line-height:1.6;white-space:pre-line}
+</style>
+</head>
+<body>
+<script>
+/* होस्ट-लॉक (v5.6.8): सही PIN डाला हो + लॉगिन पुराना न हुआ हो — वरना होम भेज दो */
+(function(){
+  var ok = false;
+  try{
+    ok = localStorage.getItem('jt-host-ok') === '1';
+    if(ok){
+      var t = parseInt(localStorage.getItem('jt-host-ok-time') || '0', 10) || 0;
+      var ttl = parseInt(localStorage.getItem('jt-host-ttl') || '0', 10);
+      if(!(ttl > 0)) ttl = 43200000; /* डिफ़ॉल्ट: 12 घंटे */
+      if(!t || (Date.now() - t) > ttl){ localStorage.removeItem('jt-host-ok'); ok = false; }
+    }
+  }catch(e){}
+  if(!ok){ location.replace('./index.html'); }
+})();
+</script>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">॥ जैन ताम्बोला ॥</div>
+    <a href="./index.html">होम</a>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <img src="./icons/logo.jpg" alt="जैन ताम्बोला" style="width:80px;height:80px;border-radius:50%;object-fit:cover">
+    <div style="margin-top:8px;font-size:.95rem;font-weight:800;color:#a0522d;letter-spacing:.2px">— Designed by <span style="color:#5d4037">Himanshu Jain</span> —</div>
+    <h2 style="font-size:1.2rem;margin:10px 0 4px">📜 शब्द सूची — जोड़ें / हटाएँ / ठीक करें</h2>
+    <div class="wl-count" id="wl-count"></div>
+    <div id="wl-custom"></div>
+  </div>
+
+  <div class="card">
+    <div class="wl-add">
+      <input id="wl-new" type="text" placeholder="नया शब्द लिखिए..." maxlength="40">
+      <button class="btn small" id="wl-add-btn" type="button">➕ जोड़ें</button>
+    </div>
+    <details class="wl-bulk">
+      <summary>एक साथ कई शब्द जोड़ें (बल्क)</summary>
+      <p class="muted" style="margin:4px 0 0">नीचे बॉक्स में कई शब्द एक साथ लिखें या पेस्ट करें — हर शब्द <b>नई लाइन</b> में, या <b>comma ( , )</b> से अलग करके। फिर "सब जोड़ें" दबाएँ।</p>
+      <textarea id="wl-bulk" class="wl-bulk-ta" placeholder="उदाहरण:&#10;राम&#10;कृष्ण, शिव, गणेश&#10;लक्ष्मी&#10;सरस्वती"></textarea>
+      <button class="btn green" id="wl-bulk-btn" type="button">✅ सब जोड़ें</button>
+      <div class="wl-bulk-result" id="wl-bulk-result"></div>
+    </details>
+    <input class="wl-search" id="wl-search" type="text" placeholder="🔍 शब्द खोजें...">
+    <div style="display:flex;gap:8px;margin:8px 0;align-items:center;flex-wrap:wrap">
+      <button class="btn small" id="wl-voice-btn" type="button">🎙 असली आवाज़ (रिकॉर्ड करें)</button>
+      <span class="muted" id="wl-voice-count" style="font-size:.85rem"></span>
+    </div>
+    <div class="wl-warn" id="wl-voice-note" style="display:none;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20">🎙 <b>आवाज़ मोड चालू है</b> — हर शब्द के सामने 🎙 दबाकर शब्द बोलें, फिर उसी बटन (⏹) से रोकें। रिकॉर्ड हुई आवाज़ गेम में शब्द निकलने पर बजेगी। ▶️ से सुनकर जाँचें। (गेम हमेशा इसी फोन से होस्ट करें)</div>
+    <div class="wl-warn" id="wl-warn"></div>
+    <div class="wl-grid" id="wl-grid"></div>
+    <button class="btn ghost" id="wl-reset" type="button" style="width:100%;margin-top:6px">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
+    <button class="btn ghost" id="wl-dedupe" type="button" style="width:100%;margin-top:6px">🔍 डुप्लिकेट शब्द ढूँढें / हटाएँ</button>
+    <p class="wl-note">
+      ✏️ = शब्द ठीक करें &nbsp;•&nbsp; ❌ = शब्द हटाएँ<br>
+      बदलाव इसी फोन में सेव होंगे और <b>अगले नए गेम</b> में लागू होंगे।<br>
+      गेम हमेशा इसी फोन से होस्ट करें।
+    </p>
+  </div>
+
+  <a class="btn ghost" href="./index.html">← होम पर लौटें</a>
+  <p class="muted" style="text-align:center;margin-top:10px">॥ वंदे श्री गुरू तारणम् ॥</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="./js/config.js"></script>
+<script src="./js/words.js"></script>
+<script src="./js/voice.js"></script>
+<script src="./js/pwa.js"></script>
+<script>
+(function(){
+  var grid = document.getElementById('wl-grid');
+  var search = document.getElementById('wl-search');
+  var countEl = document.getElementById('wl-count');
+  var customEl = document.getElementById('wl-custom');
+  var warnEl = document.getElementById('wl-warn');
+  var newInp = document.getElementById('wl-new');
+
+  var MIN_WORDS = 13; /* एक टिकट = 12 खंड, इसलिए कम से कम 13 शब्ड */
+
+  var toastEl = null, toastTimer = null;
+  function toast(msg){
+    if(!toastEl) toastEl = document.getElementById('toast');
+    if(!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  function _nrm(x){ return String(x||'').normalize('NFC').replace(/\s+/g,' ').trim(); }
+  function _nkey(x){ return _nrm(x).toLowerCase().replace(/\s+/g,''); }   /* v5.9.3: space nazarandaz karke duplicate pakde */
+  function _findDup(w){
+    var k = _nkey(w);
+    for(var i=0;i<SHABD_LIST.length;i++){ if(_nkey(SHABD_LIST[i]) === k) return i; }
+    return -1;
+  }
+  function saveList(){
+    try{ localStorage.setItem('jt_word_list', JSON.stringify(SHABD_LIST)); }catch(e){}
+  }
+  function hasCustom(){
+    try{ return !!localStorage.getItem('jt_word_list'); }catch(e){ return false; }
+  }
+
+  function updateHeader(){
+    var n = SHABD_LIST.length;
+    countEl.textContent = 'कुल ' + n + ' शब्द';
+    customEl.innerHTML = '';
+    if(hasCustom()){
+      var b = document.createElement('span');
+      b.className = 'wl-badge';
+      b.textContent = '✅ आपकी बदी हुई सूची चल रही है';
+      customEl.appendChild(b);
+    }
+    if(n < MIN_WORDS){
+      warnEl.style.display = 'block';
+      warnEl.textContent = '⚠️ कम से कम ' + MIN_WORDS + ' शब्द ज़रूरी हैं (एक टिकट = 12 खंड)। अभी सिर्फ ' + n + ' शब्द हैं — कुछ शब्द जोड़ दीजिए।';
+    }else{
+      warnEl.style.display = 'none';
+    }
+  }
+
+  function render(filter){
+    grid.innerHTML = '';
+    var f = (filter || '').trim();
+    var shown = 0;
+    SHABD_LIST.forEach(function(w, i){
+      if(f && w.indexOf(f) === -1) return;
+      shown++;
+      var d = document.createElement('div');
+      d.className = 'wl-item';
+
+      var n = document.createElement('span');
+      n.className = 'wl-num';
+      n.textContent = i + 1;
+
+      var t = document.createElement('span');
+      t.textContent = w;
+
+      var tools = document.createElement('span');
+      tools.className = 'wl-tools';
+      var be = document.createElement('button');
+      be.className = 'wl-btn'; be.type = 'button';
+      be.title = 'ठीक करें'; be.textContent = '✏️';
+      be.setAttribute('data-act', 'edit'); be.setAttribute('data-i', i);
+      var bd = document.createElement('button');
+      bd.className = 'wl-btn'; bd.type = 'button';
+      bd.title = 'हटाएँ'; bd.textContent = '❌';
+      bd.setAttribute('data-act', 'del'); bd.setAttribute('data-i', i);
+      tools.appendChild(be); tools.appendChild(bd);
+      if(voiceMode){
+        var bv = document.createElement('button');
+        bv.className = 'wl-btn'; bv.type = 'button';
+        bv.title = 'आवाज़ रिकॉर्ड करें';
+        bv.textContent = (recWord === w) ? '⏹' : (recorded[w] ? '🔁' : '🎙');
+        bv.setAttribute('data-act', 'rec'); bv.setAttribute('data-w', w);
+        var bp = document.createElement('button');
+        bp.className = 'wl-btn'; bp.type = 'button';
+        bp.title = 'सुनें'; bp.textContent = '▶️';
+        if(!recorded[w]) bp.style.opacity = '.35';
+        bp.setAttribute('data-act', 'vplay'); bp.setAttribute('data-w', w);
+        tools.appendChild(bv); tools.appendChild(bp);
+        if(recorded[w]) d.style.background = '#f1f8e9';
+      }
+
+      d.appendChild(n); d.appendChild(t); d.appendChild(tools);
+      grid.appendChild(d);
+    });
+    countEl.textContent = f
+      ? shown + ' शब्द मिले (कुल ' + SHABD_LIST.length + ' में से)'
+      : 'कुल ' + SHABD_LIST.length + ' शब्द';
+  }
+
+  /* ==================== असली आवाज़ (v5.6) ==================== */
+  var voiceMode = false;
+  var recorded = {};
+  var recWord = null, recMr = null, recStream = null, recChunks = [];
+
+  function refreshRecorded(){
+    if(!window.jtVoice){ return; }
+    jtVoice.keys().then(function(ks){
+      recorded = {};
+      (ks || []).forEach(function(w){ recorded[w] = true; });
+      var n = Object.keys(recorded).length;
+      var el = document.getElementById('wl-voice-count');
+      if(el) el.textContent = n ? '🎙 ' + n + ' शब्दों की आवाज़ रिकॉर्ड है' : '';
+      render(search.value);
+    });
+  }
+  function startRec(word, btn){
+    if(!navigator.mediaDevices || !window.MediaRecorder){
+      toast('⚠️ इस ब्राउज़र में रिकॉर्डिंग नहीं चलती — Chrome आज़माएँ'); return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+      recStream = stream; recChunks = []; recWord = word;
+      recMr = new MediaRecorder(stream);
+      recMr.ondataavailable = function(e){ if(e.data && e.data.size) recChunks.push(e.data); };
+      recMr.onstop = function(){
+        try{ recStream.getTracks().forEach(function(t){ t.stop(); }); }catch(err){}
+        var blob = new Blob(recChunks, { type: (recMr && recMr.mimeType) || 'audio/webm' });
+        var w = recWord; recWord = null;
+        if(blob.size < 300){
+          toast('⚠️ आवाज़ बहुत छोटी रही — दोबारा कोशिश करें');
+          render(search.value); return;
+        }
+        jtVoice.put(w, blob).then(function(ok){
+          toast(ok ? '✅ आवाज़ सेव हुई: ' + w : '⚠️ आवाज़ सेव नहीं हो पाई');
+          refreshRecorded();
+        });
+      };
+      try{ recMr.start(); }catch(err){ recWord = null; return; }
+      btn.textContent = '⏹';
+      btn.title = 'रिकॉर्डिंग रोकें';
+      toast('🔴 बोलिए: "' + word + '" — फिर उसी बटन (⏹) को दबाकर रोकें');
+    }).catch(function(){
+      toast('🎙 माइक की अनुमति नहीं मिली');
+    });
+  }
+  function stopRec(){
+    if(recMr && recMr.state !== 'inactive'){
+      try{ recMr.stop(); }catch(e){}
+    }
+  }
+
+  document.getElementById('wl-voice-btn').addEventListener('click', function(){
+    if(recWord) stopRec();
+    voiceMode = !voiceMode;
+    this.textContent = voiceMode ? '✖️ आवाज़ मोड बंद करें' : '🎙 असली आवाज़ (रिकॉर्ड करें)';
+    document.getElementById('wl-voice-note').style.display = voiceMode ? 'block' : 'none';
+    if(voiceMode) refreshRecorded();
+    else { document.getElementById('wl-voice-count').textContent = ''; render(search.value); }
+  });
+
+  /* जोड़ना */
+  function addWord(){
+    var w = (newInp.value || '').trim();
+    if(!w){ toast('पहले शब्द लिखिए'); return; }
+    var pos = _findDup(w);
+    if(pos !== -1){ toast('⚠️ यह शब्द पहले से है (क्र. ' + (pos+1) + ')'); return; }
+    SHABD_LIST.push(w);
+    saveList();
+    newInp.value = '';
+    updateHeader();
+    render(search.value);
+    toast('✅ जोड़ा गया: ' + w + ' (क्र. ' + SHABD_LIST.length + ')');
+  }
+
+  /* हटाना / ठीक करना */
+  grid.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+    if(!btn) return;
+    var act = btn.getAttribute('data-act');
+
+    if(act === 'rec' || act === 'vplay'){
+      var word = btn.getAttribute('data-w') || '';
+      if(!word) return;
+      if(act === 'vplay'){
+        jtVoice.get(word).then(function(b){
+          if(b){ jtVoice.playBlob(b); }
+          else { toast('इस शब्द की आवाज़ अभी रिकॉर्ड नहीं हुई — पहले 🎙 दबाएँ'); }
+        });
+        return;
+      }
+      if(recWord === word){ stopRec(); return; }
+      if(recWord){ stopRec(); }
+      startRec(word, btn);
+      return;
+    }
+
+    var i = parseInt(btn.getAttribute('data-i'), 10);
+    if(isNaN(i) || i < 0 || i >= SHABD_LIST.length) return;
+
+    if(act === 'del'){
+      if(!confirm('“' + SHABD_LIST[i] + '” शब्द हटाना है?')) return;
+      SHABD_LIST.splice(i, 1);
+      saveList();
+      updateHeader();
+      render(search.value);
+      toast('🗑️ हटा दिया गया');
+    }
+
+    if(act === 'edit'){
+      var v = prompt('शब्द ठीक करें (क्र. ' + (i+1) + '):', SHABD_LIST[i]);
+      if(v === null) return;
+      v = v.trim();
+      if(!v){ toast('शब्द खाली नहीं हो सकता'); return; }
+      var dup = SHABD_LIST.indexOf(v);
+      if(dup !== -1 && dup !== i){ toast('⚠️ यह शब्द पहले से है (क्र. ' + (dup+1) + ')'); return; }
+      SHABD_LIST[i] = v;
+      saveList();
+      render(search.value);
+      toast('✏️ ठीक कर दिया गया');
+    }
+  });
+
+  /* डुप्लिकेट ढूँढें/हटाएँ */
+  document.getElementById('wl-dedupe').addEventListener('click', function(){
+    var seen = {}, out = [], dups = [];
+    for(var i=0;i<SHABD_LIST.length;i++){
+      var k = _nkey(SHABD_LIST[i]);
+      if(!k) continue;
+      if(seen[k]){ dups.push(SHABD_LIST[i]); continue; }
+      seen[k] = 1; out.push(SHABD_LIST[i]);
+    }
+    if(!dups.length){ toast('✅ कोई डुप्लिकेट नहीं मिला — सूची साफ़ है'); return; }
+    if(!confirm(dups.length + ' डुप्लिकेट शब्द मिले:\n\n' + dups.join(', ') + '\n\nइन्हें हटा दें?')) return;
+    SHABD_LIST.splice(0, SHABD_LIST.length);
+    out.forEach(function(x){ SHABD_LIST.push(x); });
+    saveList(); updateHeader(); render(search.value);
+    toast('🗑️ ' + dups.length + ' डुप्लिकेट हटाए गए');
+  });
+
+  /* डिफ़ॉल्ट पर लौटें */
+  document.getElementById('wl-reset').addEventListener('click', function(){
+    if(!confirm('आपके सारे बदलाव हटाकर पूरी डिफ़ॉल्ट सूची वापस लानी है?')) return;
+    try{
+      localStorage.removeItem('jt_word_list');
+      localStorage.removeItem('jt_extra_words');
+      localStorage.removeItem('jt_words_unlocked');
+    }catch(e){}
+    location.reload();
+  });
+
+  document.getElementById('wl-add-btn').addEventListener('click', addWord);
+  newInp.addEventListener('keydown', function(e){ if(e.key === 'Enter') addWord(); });
+  search.addEventListener('input', function(){ render(search.value); });
+
+  /* ==================== बल्क जोड़ें — एक साथ कई शब्द ==================== */
+  function addBulk(){
+    var ta = document.getElementById('wl-bulk');
+    var res = document.getElementById('wl-bulk-result');
+    var raw = (ta && ta.value) || '';
+    if(!raw.trim()){ toast('पहले कुछ शब्द लिखें / पेस्ट करें'); return; }
+    var parts = raw.split(/[\n,;\u0964]+/);   /* नई लाइन, comma, semicolon, danda (।) */
+    var added = [], dups = [];
+    for(var i=0;i<parts.length;i++){
+      var w = _nrm(parts[i]);
+      if(!w){ continue; }
+      if(w.length > 40){ w = w.slice(0,40); }
+      var k = _nkey(w);
+      var exists = false;
+      for(var j=0;j<SHABD_LIST.length;j++){ if(_nkey(SHABD_LIST[j]) === k){ exists = true; break; } }
+      if(exists){ dups.push(w); continue; }
+      SHABD_LIST.push(w);
+      added.push(w);
+    }
+    if(added.length){ saveList(); updateHeader(); render(search.value); }
+    ta.value = '';
+    var msg = '';
+    if(added.length) msg += '✅ ' + added.length + ' शब्द जोड़े गए।';
+    if(dups.length)  msg += (msg?'\n':'') + '⚠️ ' + dups.length + ' पहले से थे (छोड़े गए): ' + dups.slice(0,8).join(', ') + (dups.length>8?' …':'');
+    if(!added.length && !dups.length) msg = 'कोई शब्द नहीं मिला।';
+    if(res) res.textContent = msg;
+    if(added.length) toast('✅ ' + added.length + ' शब्द जोड़े गए');
+  }
+  document.getElementById('wl-bulk-btn').addEventListener('click', addBulk);
+
+  updateHeader();
+  render('');
+})();
+</script>
+</body>
+</html>
