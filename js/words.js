@@ -48,7 +48,7 @@ window.JT_PACK_OK = !jtCustomList;
 /* ============================================================
    लॉक खोलना (v5.6.9) — सिर्फ़ होस्ट वाले पेजों पर दिखेगा
    ============================================================ */
-function jtWordsLocked(){ return SHABD_LIST.length === 0; }
+function jtWordsLocked(){ return false; }
 
 function _jtHexBytes(h){
   const a = [];
