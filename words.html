@@ -24,6 +24,13 @@
 .wl-warn{background:#fff3e0;border:1.5px solid #ffb74d;color:#bf360c;border-radius:12px;padding:10px 12px;font-size:.9rem;font-weight:600;text-align:center;margin:10px 0;display:none}
 .wl-badge{display:inline-block;background:#e8f5e9;color:#1b5e20;border:1.5px solid #a5d6a7;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700;margin-top:6px}
 .wl-note{font-size:.85rem;color:#8d6e63;text-align:center;margin:12px 0;line-height:1.6}
+.wl-bulk{margin:12px 0;border:1.5px dashed #ffb74d;border-radius:12px;background:#fffdf7;padding:10px 12px}
+.wl-bulk>summary{cursor:pointer;font-weight:800;color:#bf360c;font-size:.95rem;padding:4px 0;list-style:none}
+.wl-bulk>summary::-webkit-details-marker{display:none}
+.wl-bulk[open]>summary{margin-bottom:4px}
+.wl-bulk-ta{width:100%;min-height:120px;margin:8px 0;padding:12px 14px;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fff;color:#3e2723;box-sizing:border-box;line-height:1.7;resize:vertical}
+.wl-bulk-ta:focus{outline:2px solid #ef6c00}
+.wl-bulk-result{font-size:.85rem;font-weight:700;color:#2e7d32;margin:8px 0 2px;line-height:1.6;white-space:pre-line}
 </style>
 </head>
 <body>
@@ -62,6 +69,13 @@
       <input id="wl-new" type="text" placeholder="नया शब्द लिखिए..." maxlength="40">
       <button class="btn small" id="wl-add-btn" type="button">➕ जोड़ें</button>
     </div>
+    <details class="wl-bulk">
+      <summary>एक साथ कई शब्द जोड़ें (बल्क)</summary>
+      <p class="muted" style="margin:4px 0 0">नीचे बॉक्स में कई शब्द एक साथ लिखें या पेस्ट करें — हर शब्द <b>नई लाइन</b> में, या <b>comma ( , )</b> से अलग करके। फिर "सब जोड़ें" दबाएँ।</p>
+      <textarea id="wl-bulk" class="wl-bulk-ta" placeholder="उदाहरण:&#10;राम&#10;कृष्ण, शिव, गणेश&#10;लक्ष्मी&#10;सरस्वती"></textarea>
+      <button class="btn green" id="wl-bulk-btn" type="button">✅ सब जोड़ें</button>
+      <div class="wl-bulk-result" id="wl-bulk-result"></div>
+    </details>
     <input class="wl-search" id="wl-search" type="text" placeholder="🔍 शब्द खोजें...">
     <div style="display:flex;gap:8px;margin:8px 0;align-items:center;flex-wrap:wrap">
       <button class="btn small" id="wl-voice-btn" type="button">🎙 असली आवाज़ (रिकॉर्ड करें)</button>
@@ -344,6 +358,36 @@
   document.getElementById('wl-add-btn').addEventListener('click', addWord);
   newInp.addEventListener('keydown', function(e){ if(e.key === 'Enter') addWord(); });
   search.addEventListener('input', function(){ render(search.value); });
+
+  /* ==================== बल्क जोड़ें — एक साथ कई शब्द ==================== */
+  function addBulk(){
+    var ta = document.getElementById('wl-bulk');
+    var res = document.getElementById('wl-bulk-result');
+    var raw = (ta && ta.value) || '';
+    if(!raw.trim()){ toast('पहले कुछ शब्द लिखें / पेस्ट करें'); return; }
+    var parts = raw.split(/[\n,;\u0964]+/);   /* नई लाइन, comma, semicolon, danda (।) */
+    var added = [], dups = [];
+    for(var i=0;i<parts.length;i++){
+      var w = _nrm(parts[i]);
+      if(!w){ continue; }
+      if(w.length > 40){ w = w.slice(0,40); }
+      var k = _nkey(w);
+      var exists = false;
+      for(var j=0;j<SHABD_LIST.length;j++){ if(_nkey(SHABD_LIST[j]) === k){ exists = true; break; } }
+      if(exists){ dups.push(w); continue; }
+      SHABD_LIST.push(w);
+      added.push(w);
+    }
+    if(added.length){ saveList(); updateHeader(); render(search.value); }
+    ta.value = '';
+    var msg = '';
+    if(added.length) msg += '✅ ' + added.length + ' शब्द जोड़े गए।';
+    if(dups.length)  msg += (msg?'\n':'') + '⚠️ ' + dups.length + ' पहले से थे (छोड़े गए): ' + dups.slice(0,8).join(', ') + (dups.length>8?' …':'');
+    if(!added.length && !dups.length) msg = 'कोई शब्द नहीं मिला।';
+    if(res) res.textContent = msg;
+    if(added.length) toast('✅ ' + added.length + ' शब्द जोड़े गए');
+  }
+  document.getElementById('wl-bulk-btn').addEventListener('click', addBulk);
 
   updateHeader();
   render('');
