@@ -13,15 +13,8 @@ const JT_WORDS_CIPHER = { iv: '706bbd3bf94471c24e2e2615', data: 'cp+CBnhuJvLWqFw
 
 const SHABD_LIST = [];
 
-/* इस फोन में पहले खोली गई सूची लोड करो */
-(function(){
-  try{
-    const saved = JSON.parse(localStorage.getItem('jt_words_unlocked') || 'null');
-    if(Array.isArray(saved) && saved.length){
-      saved.forEach(function(w){ SHABD_LIST.push(w); });
-    }
-  }catch(e){}
-})();
+/* v5.9.2: डिफ़ॉल्ट सूची हटाई गई — पुरानी 'unlocked' सूची साफ़ करें */
+try{ localStorage.removeItem('jt_words_unlocked'); }catch(e){}
 
 /* किसी शब्द का क्रमांक (1 से शुरू) जानने के लिए */
 function shabdNumber(word){
