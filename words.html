@@ -24,6 +24,9 @@
 .wl-warn{background:#fff3e0;border:1.5px solid #ffb74d;color:#bf360c;border-radius:12px;padding:10px 12px;font-size:.9rem;font-weight:600;text-align:center;margin:10px 0;display:none}
 .wl-badge{display:inline-block;background:#e8f5e9;color:#1b5e20;border:1.5px solid #a5d6a7;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700;margin-top:6px}
 .wl-note{font-size:.85rem;color:#8d6e63;text-align:center;margin:12px 0;line-height:1.6}
+.wl-danger{margin-top:12px;border-top:1px dashed #ffe0b2;padding-top:8px}
+.wl-danger>summary{cursor:pointer;font-size:.85rem;font-weight:700;color:#8d6e63;list-style:none;text-align:center}
+.wl-danger>summary::-webkit-details-marker{display:none}
 .wl-bulk{margin:12px 0;border:1.5px dashed #ffb74d;border-radius:12px;background:#fffdf7;padding:10px 12px}
 .wl-bulk>summary{cursor:pointer;font-weight:800;color:#bf360c;font-size:.95rem;padding:4px 0;list-style:none}
 .wl-bulk>summary::-webkit-details-marker{display:none}
@@ -116,8 +119,12 @@
     <div class="wl-warn" id="wl-voice-note" style="display:none;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20">🎙 <b>आवाज़ मोड चालू है</b> — हर शब्द के सामने 🎙 दबाकर शब्द बोलें, फिर उसी बटन (⏹) से रोकें। रिकॉर्ड हुई आवाज़ गेम में शब्द निकलने पर बजेगी। ▶️ से सुनकर जाँचें। (गेम हमेशा इसी फोन से होस्ट करें)</div>
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
-    <button class="btn ghost" id="wl-reset" type="button" style="width:100%;margin-top:6px">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
     <button class="btn" id="wl-dedupe" type="button" style="width:100%;margin-top:6px;background:#c62828;color:#fff;border-color:#c62828">🔍 डुप्लिकेट प्रबंधक खोलें</button>
+    <details class="wl-danger">
+      <summary>⚙️ और विकल्प</summary>
+      <p class="muted" style="font-size:.82rem;margin:6px 0 8px;text-align:center">यह बटन आपके सारे बदलाव हटाकर डिफ़ॉल्ट सूची वापस लाता है — सिर्फ़ ज़रूरत पड़ने पर दबाइए। (आपके “डुप्लिकेट नहीं” वाले निशान बने रहेंगे।)</p>
+      <button class="btn ghost" id="wl-reset" type="button" style="width:100%">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
+    </details>
     <p class="wl-note">
       ✏️ = शब्द ठीक करें &nbsp;•&nbsp; ❌ = शब्द हटाएँ<br>
       बदलाव इसी फोन में सेव होंगे और <b>अगले नए गेम</b> में लागू होंगे।<br>
@@ -785,7 +792,6 @@
       localStorage.removeItem('jt_word_list');
       localStorage.removeItem('jt_extra_words');
       localStorage.removeItem('jt_words_unlocked');
-      localStorage.removeItem('jt_dup_ignored');
     }catch(e){}
     location.reload();
   });
