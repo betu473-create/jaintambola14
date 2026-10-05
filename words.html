@@ -31,6 +31,35 @@
 .wl-bulk-ta{width:100%;min-height:120px;margin:8px 0;padding:12px 14px;border:1.5px solid #ffcc80;border-radius:12px;font-size:1rem;font-family:inherit;background:#fff;color:#3e2723;box-sizing:border-box;line-height:1.7;resize:vertical}
 .wl-bulk-ta:focus{outline:2px solid #ef6c00}
 .wl-bulk-result{font-size:.85rem;font-weight:700;color:#2e7d32;margin:8px 0 2px;line-height:1.6;white-space:pre-line}
+/* ===== डुप्लिकेट प्रबंधक ===== */
+.wl-dupbadge{display:none;cursor:pointer;background:#ffebee;border:1.5px solid #e57373;color:#b71c1c;border-radius:20px;padding:5px 14px;font-size:.82rem;font-weight:800;margin:8px auto 0;text-align:center;width:fit-content}
+.wl-dupbadge.ok{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20;cursor:default}
+.wl-item.wl-dup{border-color:#e53935;background:#fff5f5}
+.wl-item.wl-dup .wl-num{background:#c62828}
+.wl-dupdot{position:absolute;top:2px;left:2px;font-size:.7rem}
+.dup-modal{position:fixed;inset:0;background:rgba(62,39,35,.55);display:none;z-index:80;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;-webkit-overflow-scrolling:touch}
+.dup-modal.show{display:flex}
+.dup-card{background:#fffdf7;max-width:660px;width:100%;border-radius:16px;border:2px solid #ffcc80;padding:14px;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.dup-card h3{margin:2px 0 6px;font-size:1.15rem;color:#bf360c;text-align:center}
+.dup-sum{font-size:.9rem;font-weight:700;color:#5d4037;text-align:center;margin:6px 0 10px}
+.dup-toggle{display:flex;align-items:center;gap:8px;background:#fff3e0;border:1.5px solid #ffcc80;border-radius:10px;padding:8px 10px;font-size:.85rem;font-weight:600;color:#6d4c41;margin-bottom:10px;cursor:pointer}
+.dup-toggle input{width:18px;height:18px;flex-shrink:0}
+.dup-grp{border:1.5px solid #ffcc80;border-radius:12px;padding:8px 10px 10px;margin:10px 0;background:#fff}
+.dup-grp-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.dup-grp-head b{font-size:.9rem;color:#4e342e}
+.tier{font-size:.7rem;font-weight:800;border-radius:20px;padding:2px 9px;border:1.5px solid}
+.tier.exact{background:#ffebee;color:#b71c1c;border-color:#e57373}
+.tier.variant{background:#fff3e0;color:#e65100;border-color:#ffb74d}
+.tier.fuzzy{background:#fffde7;color:#9e9d24;border-color:#d4ce4e}
+.dup-row{display:flex;align-items:center;gap:9px;padding:6px 2px;border-top:1px dashed #ffe0b2}
+.dup-row input[type=radio]{width:19px;height:19px;flex-shrink:0;accent-color:#2e7d32}
+.dup-row .w{flex:1;font-weight:700;color:#3e2723;font-size:.9rem;word-break:break-word}
+.dup-row .kn{font-size:.72rem;color:#8d6e63;font-weight:600}
+.dup-acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dup-acts .btn{font-size:.8rem;padding:7px 10px}
+.dup-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;border-top:1.5px solid #ffe0b2;padding-top:12px}
+.dup-none{text-align:center;color:#2e7d32;font-weight:700;padding:18px 8px}
+.dup-hint{font-size:.78rem;color:#8d6e63;text-align:center;line-height:1.6;margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -61,6 +90,7 @@
     <div style="margin-top:8px;font-size:.95rem;font-weight:800;color:#a0522d;letter-spacing:.2px">— Designed by <span style="color:#5d4037">Himanshu Jain</span> —</div>
     <h2 style="font-size:1.2rem;margin:10px 0 4px">📜 शब्द सूची — जोड़ें / हटाएँ / ठीक करें</h2>
     <div class="wl-count" id="wl-count"></div>
+    <div class="wl-dupbadge" id="wl-dupbadge"></div>
     <div id="wl-custom"></div>
   </div>
 
@@ -85,7 +115,7 @@
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn ghost" id="wl-reset" type="button" style="width:100%;margin-top:6px">♻️ डिफ़ॉल्ट सूची पर लौटें</button>
-    <button class="btn ghost" id="wl-dedupe" type="button" style="width:100%;margin-top:6px">🔍 डुप्लिकेट शब्द ढूँढें / हटाएँ</button>
+    <button class="btn" id="wl-dedupe" type="button" style="width:100%;margin-top:6px;background:#c62828;color:#fff;border-color:#c62828">🔍 डुप्लिकेट प्रबंधक खोलें</button>
     <p class="wl-note">
       ✏️ = शब्द ठीक करें &nbsp;•&nbsp; ❌ = शब्द हटाएँ<br>
       बदलाव इसी फोन में सेव होंगे और <b>अगले नए गेम</b> में लागू होंगे।<br>
@@ -96,6 +126,30 @@
   <a class="btn ghost" href="./index.html">← होम पर लौटें</a>
   <p class="muted" style="text-align:center;margin-top:10px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
+
+<!-- ================= डुप्लिकेट प्रबंधक (मॉडल) ================= -->
+<div class="dup-modal" id="dup-modal">
+  <div class="dup-card">
+    <h3>🔍 डुप्लिकेट प्रबंधक</h3>
+    <div class="dup-sum" id="dup-sum"></div>
+    <label class="dup-toggle" for="dup-fuzzy">
+      <input type="checkbox" id="dup-fuzzy">
+      <span>🔎 मिलते-जुलते शब्द भी दिखाएँ (सुझाव — जैसे <b>मल्लीनाथ / मल्लिनाथ</b>)</span>
+    </label>
+    <div id="dup-body"></div>
+    <div class="dup-foot">
+      <button class="btn small green" id="dup-keepfirst" type="button">✅ हर समूह में पहला रखें</button>
+      <button class="btn small" id="dup-undo" type="button" style="display:none">↩️ वापस लाएँ (Undo)</button>
+      <button class="btn small ghost" id="dup-close" type="button">बंद करें</button>
+    </div>
+    <p class="dup-hint">
+      🔴 सटीक = पूरी तरह एक जैसे (सिर्फ़ स्पेस/बिंदु/नुक़्ता अलग) — इन्हें साफ़-साफ़ हटा सकते हैं।<br>
+      🟡 मिलता-जुलता = शायद एक ही शब्द हो (थोड़ी अलग वर्तनी) — ध्यान से देखकर खुद तय करें।<br>
+      किसी समूह में जिस शब्द को रखना है उसका <b>गोला (●)</b> चुनें, फिर "चुना रखें, बाकी हटाएँ" दबाएँ।
+    </p>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="./js/config.js"></script>
@@ -110,8 +164,9 @@
   var customEl = document.getElementById('wl-custom');
   var warnEl = document.getElementById('wl-warn');
   var newInp = document.getElementById('wl-new');
+  var badgeEl = document.getElementById('wl-dupbadge');
 
-  var MIN_WORDS = 13; /* एक टिकट = 12 खंड, इसलिए कम से कम 13 शब्ड */
+  var MIN_WORDS = 13; /* एक टिकट = 12 खंड, इसलिए कम से कम 13 शब्द */
 
   var toastEl = null, toastTimer = null;
   function toast(msg){
@@ -123,20 +178,129 @@
     toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
   }
 
-  function _nrm(x){ return String(x||'').normalize('NFC').replace(/\s+/g,' ').trim(); }
-  function _nkey(x){ return _nrm(x).toLowerCase(); }
-  function _findDup(w){
-    var k = _nkey(w);
-    for(var i=0;i<SHABD_LIST.length;i++){ if(_nkey(SHABD_LIST[i]) === k) return i; }
+  /* ==================== शब्द तुलना इंजन (v5.9.4) ==================== */
+  /* हर स्तर पर तुलना-कुंजी बनाता है */
+  function _nrm(x){
+    return String(x==null?'':x)
+      .normalize('NFC')
+      .replace(/[\u200B-\u200D\uFEFF]/g,'')   /* zero-width हटाओ */
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+  function _nkey(x){ return _nrm(x).toLowerCase(); }                 /* आधार */
+  function _skey(x){ return _nkey(x).replace(/\s+/g,''); }           /* स्पेस नज़रअंदाज़ */
+  function _fkey(x){                                                 /* चिह्न/नुक़्ता नज़रअंदाज़ */
+    return _nkey(x)
+      .replace(/[.,;:!?|"'`()\[\]{}\-–—_\/\\।]+/g,'')
+      .replace(/[\u093C]/g,'')                                        /* नुक़्ता (़) */
+      .replace(/\s+/g,'')
+      .trim();
+  }
+  function _lev(a,b){                                                /* edit distance */
+    a=String(a); b=String(b);
+    if(a===b) return 0;
+    var la=a.length, lb=b.length;
+    if(!la) return lb; if(!lb) return la;
+    var prev=new Array(lb+1), cur=new Array(lb+1), i, j;
+    for(j=0;j<=lb;j++) prev[j]=j;
+    for(i=1;i<=la;i++){
+      cur[0]=i;
+      var ca=a.charCodeAt(i-1);
+      for(j=1;j<=lb;j++){
+        var cost = ca===b.charCodeAt(j-1) ? 0 : 1;
+        var v = prev[j-1]+cost;
+        if(prev[j]+1 < v) v = prev[j]+1;
+        if(cur[j-1]+1 < v) v = cur[j-1]+1;
+        cur[j]=v;
+      }
+      var t=prev; prev=cur; cur=t;
+    }
+    return prev[lb];
+  }
+  function _fuzzyThr(len){ return len<=4 ? 1 : (len<=9 ? 2 : 3); }
+
+  function _findDup(w){                 /* सटीक/स्पेस-वैरिएंट पहले से है? */
+    var k = _skey(w);
+    for(var i=0;i<SHABD_LIST.length;i++){ if(_skey(SHABD_LIST[i]) === k) return i; }
     return -1;
   }
+  function _findFuzzy(w, skip){         /* मिलता-जुलता शब्द (सुझाव) ढूँढो */
+    var fk = _fkey(w); if(!fk) return -1;
+    for(var i=0;i<SHABD_LIST.length;i++){
+      if(i===skip) continue;
+      var ofk=_fkey(SHABD_LIST[i]); if(!ofk) continue;
+      var len=Math.max(fk.length, ofk.length);
+      if(Math.abs(fk.length-ofk.length) > 1) continue;
+      if(fk.charAt(0)!==ofk.charAt(0)) continue;
+      if(_lev(fk,ofk) <= _fuzzyThr(len)) return i;
+    }
+    return -1;
+  }
+
+  /* ---------- समूह बनाना (union-find) ---------- */
+  function _buildGroups(includeFuzzy){
+    var n = SHABD_LIST.length;
+    var parent = []; for(var i=0;i<n;i++) parent[i]=i;
+    function find(x){ while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
+    function uni(a,b){ a=find(a); b=find(b); if(a!==b) parent[b]=a; }
+
+    var sk = [], fk = [];
+    for(i=0;i<n;i++){ sk[i]=_skey(SHABD_LIST[i]); fk[i]=_fkey(SHABD_LIST[i]); }
+
+    var m1={}; for(i=0;i<n;i++){ var k=sk[i]; if(!k) continue; if(m1[k]!==undefined) uni(m1[k],i); else m1[k]=i; }
+    var m2={}; for(i=0;i<n;i++){ k=fk[i]; if(!k) continue; if(m2[k]!==undefined) uni(m2[k],i); else m2[k]=i; }
+
+    if(includeFuzzy){
+      for(i=0;i<n;i++){
+        if(!fk[i]) continue;
+        for(var j=i+1;j<n;j++){
+          if(!fk[j] || find(i)===find(j)) continue;
+          var len=Math.max(fk[i].length, fk[j].length);
+          if(Math.abs(fk[i].length-fk[j].length) > 1) continue;
+          if(fk[i].charAt(0)!==fk[j].charAt(0)) continue;
+          if(_lev(fk[i],fk[j]) <= _fuzzyThr(len)) uni(i,j);
+        }
+      }
+    }
+
+    var buckets={};
+    for(i=0;i<n;i++){ var r=find(i); (buckets[r]=buckets[r]||[]).push(i); }
+    var out=[];
+    Object.keys(buckets).forEach(function(r){
+      var idx=buckets[r];
+      if(idx.length<2) return;
+      var allSk=true, allFk=true;
+      for(var t=1;t<idx.length;t++){
+        if(sk[idx[t]]!==sk[idx[0]]) allSk=false;
+        if(fk[idx[t]]!==fk[idx[0]]) allFk=false;
+      }
+      out.push({ indices: idx, tier: allSk ? 'exact' : (allFk ? 'variant' : 'fuzzy') });
+    });
+    out.sort(function(a,b){ return a.indices[0]-b.indices[0]; });
+    return out;
+  }
+
+  /* कैश: सटीक+वैरिएंट समूह (हर बदलाव पर दोबारा) */
+  var DUP_GROUPS = [];
+  var DUP_INDEX = {};   /* index -> true */
+  var FUZZY_CACHE = null;
+  function recomputeDups(){
+    DUP_GROUPS = _buildGroups(false);
+    DUP_INDEX = {};
+    DUP_GROUPS.forEach(function(g){ g.indices.forEach(function(i){ DUP_INDEX[i]=true; }); });
+    FUZZY_CACHE = null;
+  }
+  function dupCount(){
+    var d=0; DUP_GROUPS.forEach(function(g){ d += g.indices.length-1; }); return d;
+  }
+
+  /* ==================== सेव / हेडर ==================== */
   function saveList(){
     try{ localStorage.setItem('jt_word_list', JSON.stringify(SHABD_LIST)); }catch(e){}
   }
   function hasCustom(){
     try{ return !!localStorage.getItem('jt_word_list'); }catch(e){ return false; }
   }
-
   function updateHeader(){
     var n = SHABD_LIST.length;
     countEl.textContent = 'कुल ' + n + ' शब्द';
@@ -153,8 +317,20 @@
     }else{
       warnEl.style.display = 'none';
     }
+    /* डुप्लिकेट बैज */
+    var d = dupCount();
+    if(d>0){
+      badgeEl.className = 'wl-dupbadge';
+      badgeEl.style.display = 'block';
+      badgeEl.textContent = '⚠️ ' + d + ' डुप्लिकेट शब्द (' + DUP_GROUPS.length + ' समूह) — ठीक करने के लिए दबाएँ';
+    }else{
+      badgeEl.className = 'wl-dupbadge ok';
+      badgeEl.style.display = 'block';
+      badgeEl.textContent = '✅ कोई सटीक डुप्लिकेट नहीं';
+    }
   }
 
+  /* ==================== रेंडर ==================== */
   function render(filter){
     grid.innerHTML = '';
     var f = (filter || '').trim();
@@ -163,7 +339,7 @@
       if(f && w.indexOf(f) === -1) return;
       shown++;
       var d = document.createElement('div');
-      d.className = 'wl-item';
+      d.className = 'wl-item' + (DUP_INDEX[i] ? ' wl-dup' : '');
 
       var n = document.createElement('span');
       n.className = 'wl-num';
@@ -171,6 +347,12 @@
 
       var t = document.createElement('span');
       t.textContent = w;
+
+      if(DUP_INDEX[i]){
+        var dot = document.createElement('span');
+        dot.className = 'wl-dupdot'; dot.textContent = '⚠️';
+        d.appendChild(dot);
+      }
 
       var tools = document.createElement('span');
       tools.className = 'wl-tools';
@@ -266,21 +448,22 @@
     else { document.getElementById('wl-voice-count').textContent = ''; render(search.value); }
   });
 
-  /* जोड़ना */
+  /* ==================== जोड़ना ==================== */
   function addWord(){
     var w = (newInp.value || '').trim();
     if(!w){ toast('पहले शब्द लिखिए'); return; }
     var pos = _findDup(w);
     if(pos !== -1){ toast('⚠️ यह शब्द पहले से है (क्र. ' + (pos+1) + ')'); return; }
+    var fz = _findFuzzy(w, -1);
+    if(fz !== -1){
+      if(!confirm('“' + w + '” पहले से मौजूद “' + SHABD_LIST[fz] + '” (क्र. ' + (fz+1) + ') से मिलता-जुलता है।\nफिर भी जोड़ें?')) return;
+    }
     SHABD_LIST.push(w);
-    saveList();
-    newInp.value = '';
-    updateHeader();
-    render(search.value);
+    saveList(); recomputeDups(); updateHeader(); render(search.value);
     toast('✅ जोड़ा गया: ' + w + ' (क्र. ' + SHABD_LIST.length + ')');
   }
 
-  /* हटाना / ठीक करना */
+  /* ==================== हटाना / ठीक करना ==================== */
   grid.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('[data-act]') : null;
     if(!btn) return;
@@ -307,45 +490,186 @@
 
     if(act === 'del'){
       if(!confirm('“' + SHABD_LIST[i] + '” शब्द हटाना है?')) return;
+      pushUndo();
       SHABD_LIST.splice(i, 1);
-      saveList();
-      updateHeader();
-      render(search.value);
+      saveList(); recomputeDups(); updateHeader(); render(search.value);
       toast('🗑️ हटा दिया गया');
     }
 
     if(act === 'edit'){
       var v = prompt('शब्द ठीक करें (क्र. ' + (i+1) + '):', SHABD_LIST[i]);
       if(v === null) return;
-      v = v.trim();
+      v = _nrm(v);
       if(!v){ toast('शब्द खाली नहीं हो सकता'); return; }
-      var dup = SHABD_LIST.indexOf(v);
+      var dup = _findDup(v);
       if(dup !== -1 && dup !== i){ toast('⚠️ यह शब्द पहले से है (क्र. ' + (dup+1) + ')'); return; }
       SHABD_LIST[i] = v;
-      saveList();
-      render(search.value);
+      saveList(); recomputeDups(); render(search.value);
       toast('✏️ ठीक कर दिया गया');
     }
   });
 
-  /* डुप्लिकेट ढूँढें/हटाएँ */
-  document.getElementById('wl-dedupe').addEventListener('click', function(){
-    var seen = {}, out = [], dups = [];
-    for(var i=0;i<SHABD_LIST.length;i++){
-      var k = _nkey(SHABD_LIST[i]);
-      if(!k) continue;
-      if(seen[k]){ dups.push(SHABD_LIST[i]); continue; }
-      seen[k] = 1; out.push(SHABD_LIST[i]);
-    }
-    if(!dups.length){ toast('✅ कोई डुप्लिकेट नहीं मिला — सूची साफ़ है'); return; }
-    if(!confirm(dups.length + ' डुप्लिकेट शब्द मिले:\n\n' + dups.join(', ') + '\n\nइन्हें हटा दें?')) return;
+  /* ==================== Undo ==================== */
+  var undoStack = [];
+  function pushUndo(){
+    undoStack.push(SHABD_LIST.slice());
+    if(undoStack.length > 20) undoStack.shift();
+  }
+  function doUndo(){
+    if(!undoStack.length){ toast('वापस लाने के लिए कुछ नहीं'); return; }
+    var snap = undoStack.pop();
     SHABD_LIST.splice(0, SHABD_LIST.length);
-    out.forEach(function(x){ SHABD_LIST.push(x); });
-    saveList(); updateHeader(); render(search.value);
-    toast('🗑️ ' + dups.length + ' डुप्लिकेट हटाए गए');
+    snap.forEach(function(x){ SHABD_LIST.push(x); });
+    saveList(); recomputeDups(); updateHeader(); render(search.value); openManager(true);
+    toast('↩️ वापस लाया गया');
+  }
+
+  /* ==================== डुप्लिकेट प्रबंधक ==================== */
+  var modal = document.getElementById('dup-modal');
+  var dupBody = document.getElementById('dup-body');
+  var dupSum = document.getElementById('dup-sum');
+  var dupFuzzy = document.getElementById('dup-fuzzy');
+  var undoBtn = document.getElementById('dup-undo');
+
+  var TIER = {
+    exact:   { cls:'exact',   label:'🔴 सटीक डुप्लिकेट' },
+    variant: { cls:'variant', label:'🟠 स्पेस/चिह्न भिन्न' },
+    fuzzy:   { cls:'fuzzy',   label:'🟡 मिलता-जुलता (सुझाव)' }
+  };
+
+  function currentGroups(){
+    if(dupFuzzy.checked){
+      if(!FUZZY_CACHE) FUZZY_CACHE = _buildGroups(true);
+      return FUZZY_CACHE;
+    }
+    return DUP_GROUPS;
+  }
+
+  function openManager(keepScroll){
+    modal.classList.add('show');
+    undoBtn.style.display = undoStack.length ? 'inline-block' : 'none';
+    drawManager();
+    if(!keepScroll) modal.scrollTop = 0;
+  }
+  function closeManager(){ modal.classList.remove('show'); }
+
+  function drawManager(){
+    var groups = currentGroups();
+    dupBody.innerHTML = '';
+    if(!groups.length){
+      dupSum.textContent = dupFuzzy.checked ? 'कोई मिलता-जुलता शब्द नहीं मिला' : 'कोई सटीक डुप्लिकेट नहीं मिला ✅';
+      var none = document.createElement('div');
+      none.className = 'dup-none';
+      none.textContent = dupFuzzy.checked ? '✅ सूची बिल्कुल साफ़ है' : '✅ सूची में कोई सटीक डुप्लिकेट नहीं है';
+      dupBody.appendChild(none);
+      return;
+    }
+    var rd = dupCount();
+    var rg = DUP_GROUPS.length;
+    var fz = 0;
+    if(dupFuzzy.checked){ groups.forEach(function(g){ if(g.tier==='fuzzy') fz += g.indices.length-1; }); }
+    dupSum.textContent = rd + ' सटीक डुप्लिकेट, ' + rg + ' समूह'
+      + (dupFuzzy.checked ? ('  •  ' + fz + ' मिलता-जुलता सुझाव') : '');
+
+    groups.forEach(function(g, gi){
+      var card = document.createElement('div');
+      card.className = 'dup-grp';
+
+      var head = document.createElement('div');
+      head.className = 'dup-grp-head';
+      var tier = TIER[g.tier] || TIER.fuzzy;
+      var tb = document.createElement('span'); tb.className = 'tier ' + tier.cls; tb.textContent = tier.label;
+      var hb = document.createElement('b'); hb.textContent = 'समूह ' + (gi+1) + ' — ' + g.indices.length + ' शब्द';
+      head.appendChild(tb); head.appendChild(hb);
+      card.appendChild(head);
+
+      g.indices.forEach(function(idx, k){
+        var row = document.createElement('div');
+        row.className = 'dup-row';
+        var radio = document.createElement('input');
+        radio.type = 'radio'; radio.name = 'keep-' + gi; radio.value = String(idx);
+        if(k === 0) radio.checked = true;
+        var w = document.createElement('span'); w.className = 'w'; w.textContent = SHABD_LIST[idx];
+        var kn = document.createElement('span'); kn.className = 'kn'; kn.textContent = 'क्र. ' + (idx+1);
+        row.appendChild(radio); row.appendChild(w); row.appendChild(kn);
+        card.appendChild(row);
+      });
+
+      var acts = document.createElement('div');
+      acts.className = 'dup-acts';
+      var bKeep = document.createElement('button');
+      bKeep.className = 'btn small green'; bKeep.type = 'button';
+      bKeep.textContent = '✅ चुना हुआ रखें, बाकी हटाएँ';
+      bKeep.addEventListener('click', function(){ applyKeep(gi); });
+      var bDel = document.createElement('button');
+      bDel.className = 'btn small'; bDel.type = 'button';
+      bDel.style.cssText = 'background:#c62828;color:#fff;border-color:#c62828';
+      bDel.textContent = '🗑 पूरा समूह हटाएँ';
+      bDel.addEventListener('click', function(){ applyDeleteAll(gi); });
+      acts.appendChild(bKeep); acts.appendChild(bDel);
+      card.appendChild(acts);
+
+      dupBody.appendChild(card);
+    });
+  }
+
+  function _removeIndices(toRemove){
+    toRemove.sort(function(a,b){ return b-a; });
+    toRemove.forEach(function(i){ SHABD_LIST.splice(i,1); });
+  }
+
+  function applyKeep(gi){
+    var groups = currentGroups();
+    var g = groups[gi]; if(!g) return;
+    var sel = dupBody.querySelector('input[name="keep-' + gi + '"]:checked');
+    if(!sel){ toast('पहले चुनें कौन-सा शब्द रखना है'); return; }
+    var keepIdx = parseInt(sel.value, 10);
+    var toRemove = g.indices.filter(function(i){ return i !== keepIdx; });
+    if(!toRemove.length) return;
+    if(!confirm('समूह ' + (gi+1) + ' में सिर्फ़ “' + SHABD_LIST[keepIdx] + '” रखकर बाकी ' + toRemove.length + ' हटा दें?')) return;
+    pushUndo();
+    _removeIndices(toRemove);
+    saveList(); recomputeDups(); updateHeader(); render(search.value);
+    undoBtn.style.display = 'inline-block';
+    drawManager();
+    toast('🗑️ ' + toRemove.length + ' हटाए गए');
+  }
+
+  function applyDeleteAll(gi){
+    var groups = currentGroups();
+    var g = groups[gi]; if(!g) return;
+    if(!confirm('समूह ' + (gi+1) + ' के सारे ' + g.indices.length + ' शब्द हटा दें?')) return;
+    pushUndo();
+    _removeIndices(g.indices.slice());
+    saveList(); recomputeDups(); updateHeader(); render(search.value);
+    undoBtn.style.display = 'inline-block';
+    drawManager();
+    toast('🗑️ पूरा समूह हटाया');
+  }
+
+  /* हर समूह में पहला रखो — सिर्फ़ सटीक समूहों पर */
+  document.getElementById('dup-keepfirst').addEventListener('click', function(){
+    var groups = _buildGroups(false);
+    var toRemove = [];
+    groups.forEach(function(g){ for(var k=1;k<g.indices.length;k++) toRemove.push(g.indices[k]); });
+    if(!toRemove.length){ toast('✅ हटाने के लिए कुछ नहीं'); return; }
+    if(!confirm('सभी ' + groups.length + ' सटीक समूहों में पहला शब्द रखकर बाकी ' + toRemove.length + ' डुप्लिकेट हटा दें?')) return;
+    pushUndo();
+    _removeIndices(toRemove);
+    saveList(); recomputeDups(); updateHeader(); render(search.value);
+    undoBtn.style.display = 'inline-block';
+    drawManager();
+    toast('🗑️ ' + toRemove.length + ' डुप्लिकेट हटाए गए');
   });
 
-  /* डिफ़ॉल्ट पर लौटें */
+  document.getElementById('dup-undo').addEventListener('click', doUndo);
+  document.getElementById('dup-close').addEventListener('click', closeManager);
+  dupFuzzy.addEventListener('change', function(){ if(this.checked) FUZZY_CACHE=null; drawManager(); });
+  modal.addEventListener('click', function(e){ if(e.target === modal) closeManager(); });
+  document.getElementById('wl-dedupe').addEventListener('click', function(){ openManager(); });
+  badgeEl.addEventListener('click', function(){ if(dupCount()>0) openManager(); });
+
+  /* ==================== डिफ़ॉल्ट पर लौटें ==================== */
   document.getElementById('wl-reset').addEventListener('click', function(){
     if(!confirm('आपके सारे बदलाव हटाकर पूरी डिफ़ॉल्ट सूची वापस लानी है?')) return;
     try{
@@ -372,14 +696,12 @@
       var w = _nrm(parts[i]);
       if(!w){ continue; }
       if(w.length > 40){ w = w.slice(0,40); }
-      var k = _nkey(w);
-      var exists = false;
-      for(var j=0;j<SHABD_LIST.length;j++){ if(_nkey(SHABD_LIST[j]) === k){ exists = true; break; } }
+      var exists = _findDup(w) !== -1;
       if(exists){ dups.push(w); continue; }
       SHABD_LIST.push(w);
       added.push(w);
     }
-    if(added.length){ saveList(); updateHeader(); render(search.value); }
+    if(added.length){ saveList(); recomputeDups(); updateHeader(); render(search.value); }
     ta.value = '';
     var msg = '';
     if(added.length) msg += '✅ ' + added.length + ' शब्द जोड़े गए।';
@@ -390,6 +712,7 @@
   }
   document.getElementById('wl-bulk-btn').addEventListener('click', addBulk);
 
+  recomputeDups();
   updateHeader();
   render('');
 })();
