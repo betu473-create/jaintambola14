@@ -149,7 +149,7 @@
       <button class="btn small ghost" id="dup-close" type="button">बंद करें</button>
     </div>
     <p class="dup-hint">
-      🔴 सटीक/वर्तनी = एक ही शब्द (सिर्फ़ स्पेस, मात्रा, नुक़्ता या "जी" अलग) — इन्हें साफ़-साफ़ हटा सकते हैं।<br>
+      🔴 सटीक/वर्तनी = एक ही शब्द (सिर्फ़ स्पेस, मात्रा, नुक़्ता, "जी" या ब्रह्म/ब्रम्ह जैसा फ़र्क़) — इन्हें साफ़-साफ़ हटा सकते हैं।<br>
       🟡 मिलता-जुलता = शायद एक ही शब्द हो (थोड़ी अलग वर्तनी) — ध्यान से देखकर खुद तय करें।<br>
       किसी समूह में जिस शब्द को रखना है उसका <b>गोला (●)</b> चुनें, फिर "चुना रखें, बाकी हटाएँ" दबाएँ।<br>
       अगर समूह के शब्द असल में अलग हैं, तो <b>"सब रखें (डुप्लिकेट नहीं)"</b> दबाएँ — कुछ हटेगा नहीं, और वह समूह दोबारा नहीं दिखेगा।
@@ -199,6 +199,7 @@
   function _vkey(x){                                                 /* मात्रा/अनुस्वार/"जी" भी नज़रअंदाज़ */
     return _nkey(x)
       .replace(/[\u093C]/g,'')                                        /* नुक़्ता */
+      .replace(/\u0939\u094D\u092E/g,'\u092E\u094D\u0939')            /* ह्म -> म्ह (ब्रह्म/ब्रम्ह) */
       .replace(/[\u093F\u0940]/g,'\u093F')                            /* ि ी -> ि */
       .replace(/[\u0941\u0942]/g,'\u0941')                            /* ु ू -> ु */
       .replace(/[\u0901\u0902]/g,'\u0902')                            /* ँ ं -> ं */
@@ -262,43 +263,55 @@
   function _groupSig(indices){ return indices.map(function(i){ return _fkey(SHABD_LIST[i]); }).sort().join('|'); }
   function _isIgnored(g){ return !!IGNORED[_groupSig(g.indices)]; }
 
-  /* ---------- समूह बनाना (union-find) ---------- */
+  /* ---------- समूह बनाना ---------- */
   function _buildGroups(includeFuzzy){
     var n = SHABD_LIST.length;
-    var parent = []; for(var i=0;i<n;i++) parent[i]=i;
-    function find(x){ while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
-    function uni(a,b){ a=find(a); b=find(b); if(a!==b) parent[b]=a; }
-
     var sk = [], fk = [], sk0 = [];
-    for(i=0;i<n;i++){ sk[i]=_vkey(SHABD_LIST[i]); sk0[i]=_skey(SHABD_LIST[i]); fk[i]=_fkey(SHABD_LIST[i]); }
+    for(var i=0;i<n;i++){ sk[i]=_vkey(SHABD_LIST[i]); sk0[i]=_skey(SHABD_LIST[i]); fk[i]=_fkey(SHABD_LIST[i]); }
 
-    var m1={}; for(i=0;i<n;i++){ var k=sk[i]; if(!k) continue; if(m1[k]!==undefined) uni(m1[k],i); else m1[k]=i; }
-    var m2={}; for(i=0;i<n;i++){ k=fk[i]; if(!k) continue; if(m2[k]!==undefined) uni(m2[k],i); else m2[k]=i; }
+    var groups = [], groupOf = [];
+    for(i=0;i<n;i++) groupOf[i] = -1;
 
+    /* ---- पास 1: सटीक / वर्तनी (एक ही vkey) ---- */
+    var m1 = {};
+    for(i=0;i<n;i++){
+      var k = sk[i]; if(!k) continue;
+      if(m1[k]!==undefined){ groupOf[i]=groupOf[m1[k]]; groups[groupOf[i]].push(i); }
+      else { m1[k]=i; groupOf[i]=groups.length; groups.push([i]); }
+    }
+
+    /* ---- पास 2: मिलते-जुलते — सिर्फ़ बचे हुए अकेले शब्दों में, और सिर्फ़ जोड़ी (pair) ---- */
     if(includeFuzzy){
-      for(i=0;i<n;i++){
-        if(!fk[i]) continue;
-        for(var j=i+1;j<n;j++){
-          if(!fk[j] || find(i)===find(j)) continue;
-          var len=Math.max(fk[i].length, fk[j].length);
-          if(Math.abs(fk[i].length-fk[j].length) > 1) continue;
-          if(fk[i].charAt(0)!==fk[j].charAt(0)) continue;
-          if(_lev(fk[i],fk[j]) <= _fuzzyThr(len)) uni(i,j);
+      function sim(a,b){
+        if(!fk[a] || !fk[b]) return false;
+        var len=Math.max(fk[a].length, fk[b].length);
+        if(Math.abs(fk[a].length-fk[b].length) > 1) return false;
+        if(fk[a].charAt(0)!==fk[b].charAt(0)) return false;
+        return _lev(fk[a],fk[b]) <= _fuzzyThr(len);
+      }
+      var used = {}, U = [];
+      for(i=0;i<n;i++){ if(groups[groupOf[i]].length===1 && fk[i]) U.push(i); }
+      for(var a=0;a<U.length;a++){
+        var seed=U[a]; if(used[seed]) continue; used[seed]=1;
+        var partner=-1, best=99;
+        for(var b=0;b<U.length;b++){
+          if(b===a) continue;
+          var c=U[b]; if(used[c]) continue;
+          if(!sim(seed,c)) continue;
+          var d=_lev(fk[seed],fk[c]);
+          if(d<best){ best=d; partner=c; }
         }
+        if(partner>=0){ used[partner]=1; groups.push([seed,partner]); }
       }
     }
 
-    var buckets={};
-    for(i=0;i<n;i++){ var r=find(i); (buckets[r]=buckets[r]||[]).push(i); }
     var out=[];
-    Object.keys(buckets).forEach(function(r){
-      var idx=buckets[r];
+    groups.forEach(function(idx){
       if(idx.length<2) return;
-      var allSk=true, allFk=true, allExact=true;
+      var allExact=true, allSk=true;
       for(var t=1;t<idx.length;t++){
         if(sk0[idx[t]]!==sk0[idx[0]]) allExact=false;
         if(sk[idx[t]]!==sk[idx[0]]) allSk=false;
-        if(fk[idx[t]]!==fk[idx[0]]) allFk=false;
       }
       out.push({ indices: idx, tier: allExact ? 'exact' : (allSk ? 'variant' : 'fuzzy') });
     });
