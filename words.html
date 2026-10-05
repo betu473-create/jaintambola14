@@ -44,6 +44,8 @@
 .dup-sum{font-size:.9rem;font-weight:700;color:#5d4037;text-align:center;margin:6px 0 10px}
 .dup-toggle{display:flex;align-items:center;gap:8px;background:#fff3e0;border:1.5px solid #ffcc80;border-radius:10px;padding:8px 10px;font-size:.85rem;font-weight:600;color:#6d4c41;margin-bottom:10px;cursor:pointer}
 .dup-toggle input{width:18px;height:18px;flex-shrink:0}
+.dup-ignored-bar{display:none;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:10px;padding:7px 10px;font-size:.8rem;font-weight:700;color:#1b5e20;margin-bottom:10px}
+.dup-ignored-bar .btn{font-size:.78rem;padding:6px 9px}
 .dup-grp{border:1.5px solid #ffcc80;border-radius:12px;padding:8px 10px 10px;margin:10px 0;background:#fff}
 .dup-grp-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
 .dup-grp-head b{font-size:.9rem;color:#4e342e}
@@ -136,6 +138,10 @@
       <input type="checkbox" id="dup-fuzzy">
       <span>🔎 मिलते-जुलते शब्द भी दिखाएँ (सुझाव — जैसे <b>मल्लीनाथ / मल्लिनाथ</b>)</span>
     </label>
+    <div class="dup-ignored-bar" id="dup-ignored-bar" style="display:none">
+      <span id="dup-ignored-text"></span>
+      <button class="btn small ghost" id="dup-ignored-restore" type="button">↩️ वापस लाएँ</button>
+    </div>
     <div id="dup-body"></div>
     <div class="dup-foot">
       <button class="btn small green" id="dup-keepfirst" type="button">✅ हर समूह में पहला रखें</button>
@@ -145,7 +151,7 @@
     <p class="dup-hint">
       🔴 सटीक = पूरी तरह एक जैसे (सिर्फ़ स्पेस/बिंदु/नुक़्ता अलग) — इन्हें साफ़-साफ़ हटा सकते हैं।<br>
       🟡 मिलता-जुलता = शायद एक ही शब्द हो (थोड़ी अलग वर्तनी) — ध्यान से देखकर खुद तय करें।<br>
-      किसी समूह में जिस शब्द को रखना है उसका <b>गोला (●)</b> चुनें, फिर "चुना रखें, बाकी हटाएँ" दबाएँ।
+      अगर समूह के शब्द असल में अलग हैं, तो <b>"सब रखें (डुप्लिकेट नहीं)"</b> दबाएँ — कुछ हटेगा नहीं, और वह समूह दोबारा नहीं दिखेगा।
     </p>
   </div>
 </div>
@@ -237,6 +243,13 @@
     return -1;
   }
 
+  /* ---------- इग्नोर किए गए समूह ("ये डुप्लिकेट नहीं हैं") ---------- */
+  var IGNORED = {};
+  try{ (JSON.parse(localStorage.getItem('jt_dup_ignored') || '[]') || []).forEach(function(s){ IGNORED[s]=1; }); }catch(e){}
+  function _saveIgnored(){ try{ localStorage.setItem('jt_dup_ignored', JSON.stringify(Object.keys(IGNORED))); }catch(e){} }
+  function _groupSig(indices){ return indices.map(function(i){ return _fkey(SHABD_LIST[i]); }).sort().join('|'); }
+  function _isIgnored(g){ return !!IGNORED[_groupSig(g.indices)]; }
+
   /* ---------- समूह बनाना (union-find) ---------- */
   function _buildGroups(includeFuzzy){
     var n = SHABD_LIST.length;
@@ -276,6 +289,7 @@
       }
       out.push({ indices: idx, tier: allSk ? 'exact' : (allFk ? 'variant' : 'fuzzy') });
     });
+    out = out.filter(function(g){ return !_isIgnored(g); });
     out.sort(function(a,b){ return a.indices[0]-b.indices[0]; });
     return out;
   }
@@ -530,6 +544,13 @@
   var dupSum = document.getElementById('dup-sum');
   var dupFuzzy = document.getElementById('dup-fuzzy');
   var undoBtn = document.getElementById('dup-undo');
+  var ignoredBar = document.getElementById('dup-ignored-bar');
+  var ignoredText = document.getElementById('dup-ignored-text');
+  function updateIgnoredBar(){
+    var n = Object.keys(IGNORED).length;
+    if(n>0){ ignoredBar.style.display = 'flex'; ignoredText.textContent = '✅ ' + n + ' समूह “डुप्लिकेट नहीं” के रूप में छोड़े गए'; }
+    else { ignoredBar.style.display = 'none'; }
+  }
 
   var TIER = {
     exact:   { cls:'exact',   label:'🔴 सटीक डुप्लिकेट' },
@@ -556,6 +577,7 @@
   function drawManager(){
     var groups = currentGroups();
     dupBody.innerHTML = '';
+    updateIgnoredBar();
     if(!groups.length){
       dupSum.textContent = dupFuzzy.checked ? 'कोई मिलता-जुलता शब्द नहीं मिला' : 'कोई सटीक डुप्लिकेट नहीं मिला ✅';
       var none = document.createElement('div');
@@ -606,7 +628,11 @@
       bDel.style.cssText = 'background:#c62828;color:#fff;border-color:#c62828';
       bDel.textContent = '🗑 पूरा समूह हटाएँ';
       bDel.addEventListener('click', function(){ applyDeleteAll(gi); });
-      acts.appendChild(bKeep); acts.appendChild(bDel);
+      var bAll = document.createElement('button');
+      bAll.className = 'btn small ghost'; bAll.type = 'button';
+      bAll.textContent = '✅ सब रखें (डुप्लिकेट नहीं)';
+      bAll.addEventListener('click', function(){ applyKeepAll(gi); });
+      acts.appendChild(bKeep); acts.appendChild(bAll); acts.appendChild(bDel);
       card.appendChild(acts);
 
       dupBody.appendChild(card);
@@ -647,6 +673,17 @@
     toast('🗑️ पूरा समूह हटाया');
   }
 
+  /* सब रखें — इस समूह को "डुप्लिकेट नहीं" मानकर छोड़ दो (कुछ हटता नहीं) */
+  function applyKeepAll(gi){
+    var groups = currentGroups();
+    var g = groups[gi]; if(!g) return;
+    IGNORED[_groupSig(g.indices)] = 1;
+    _saveIgnored();
+    recomputeDups(); updateHeader(); render(search.value);
+    drawManager();
+    toast('✅ इस समूह को “डुप्लिकेट नहीं” के रूप में रखा');
+  }
+
   /* हर समूह में पहला रखो — सिर्फ़ सटीक समूहों पर */
   document.getElementById('dup-keepfirst').addEventListener('click', function(){
     var groups = _buildGroups(false);
@@ -664,6 +701,13 @@
 
   document.getElementById('dup-undo').addEventListener('click', doUndo);
   document.getElementById('dup-close').addEventListener('click', closeManager);
+  document.getElementById('dup-ignored-restore').addEventListener('click', function(){
+    if(!confirm('छोड़े गए सभी समूहों को फिर से दिखाना है?')) return;
+    IGNORED = {}; _saveIgnored();
+    recomputeDups(); updateHeader(); render(search.value);
+    drawManager();
+    toast('↩️ छोड़े गए समूह वापस लाए');
+  });
   dupFuzzy.addEventListener('change', function(){ if(this.checked) FUZZY_CACHE=null; drawManager(); });
   modal.addEventListener('click', function(e){ if(e.target === modal) closeManager(); });
   document.getElementById('wl-dedupe').addEventListener('click', function(){ openManager(); });
@@ -676,6 +720,7 @@
       localStorage.removeItem('jt_word_list');
       localStorage.removeItem('jt_extra_words');
       localStorage.removeItem('jt_words_unlocked');
+      localStorage.removeItem('jt_dup_ignored');
     }catch(e){}
     location.reload();
   });
