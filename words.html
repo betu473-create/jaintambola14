@@ -65,6 +65,17 @@
 .dup-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;border-top:1.5px solid #ffe0b2;padding-top:12px}
 .dup-none{text-align:center;color:#2e7d32;font-weight:700;padding:18px 8px}
 .dup-hint{font-size:.78rem;color:#8d6e63;text-align:center;line-height:1.6;margin:8px 0 0}
+.wl-print-area{display:none}
+@media print{
+  .wrap,.toast,.dup-modal{display:none !important}
+  body{background:#fff !important;padding:0;margin:0}
+  .wl-print-area{display:block !important;padding:8mm;color:#000}
+  .wl-print-area h1{font-size:1.05rem;text-align:center;margin:0 0 2px;color:#000}
+  .wl-print-area .sub{text-align:center;font-size:.78rem;color:#333;margin:0 0 8px}
+  .wl-print-grid{column-count:3;column-gap:14px;font-size:.78rem;line-height:1.45}
+  .wl-print-grid .it{break-inside:avoid;page-break-inside:avoid;display:flex;gap:4px;margin:0 0 1px}
+  .wl-print-grid .n{color:#555;min-width:20px;text-align:right;display:inline-block}
+}
 </style>
 </head>
 <body>
@@ -120,6 +131,7 @@
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn" id="wl-dedupe" type="button" style="width:100%;margin-top:6px;background:#c62828;color:#fff;border-color:#c62828">🔍 डुप्लिकेट प्रबंधक खोलें</button>
+    <button class="btn ghost" id="wl-print-btn" type="button" style="width:100%;margin-top:6px">📄 मेरी सूची का PDF / प्रिंट करें</button>
     <details class="wl-danger">
       <summary>⚙️ और विकल्प</summary>
       <p class="muted" style="font-size:.82rem;margin:6px 0 8px;text-align:center">यह बटन आपके सारे बदलाव हटाकर डिफ़ॉल्ट सूची वापस लाता है — सिर्फ़ ज़रूरत पड़ने पर दबाइए। (आपके “डुप्लिकेट नहीं” वाले निशान बने रहेंगे।)</p>
@@ -135,6 +147,9 @@
   <a class="btn ghost" href="./index.html">← होम पर लौटें</a>
   <p class="muted" style="text-align:center;margin-top:10px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
+
+<!-- शब्द सूची का PDF/प्रिंट क्षेत्र (स्क्रीन पर छिपा, प्रिंट में दिखे) -->
+<div id="wl-print" class="wl-print-area"></div>
 
 <!-- ================= डुप्लिकेट प्रबंधक (मॉडल) ================= -->
 <div class="dup-modal" id="dup-modal">
@@ -783,6 +798,20 @@
   dupFuzzy.addEventListener('change', function(){ try{ localStorage.setItem('jt_dup_fuzzy', this.checked?'1':'0'); }catch(e){} if(this.checked) FUZZY_CACHE=null; drawManager(); });
   modal.addEventListener('click', function(e){ if(e.target === modal) closeManager(); });
   document.getElementById('wl-dedupe').addEventListener('click', function(){ openManager(); });
+
+  /* ==================== शब्द सूची का PDF / प्रिंट ==================== */
+  function _esc(s){ return String(s).replace(/[&<>]/g, function(c){ return c==='&'?'&amp;':(c==='<'?'&lt;':'&gt;'); }); }
+  function buildPrint(){
+    var el = document.getElementById('wl-print');
+    var d = new Date();
+    var dt = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    var items = SHABD_LIST.map(function(w, i){
+      return '<div class="it"><span class="n">' + (i+1) + '.</span><span>' + _esc(w) + '</span></div>';
+    }).join('');
+    el.innerHTML = '<h1>॥ जैन ताम्बोला ॥ — शब्द सूची</h1><div class="sub">कुल ' + SHABD_LIST.length + ' शब्द • ' + dt + '</div><div class="wl-print-grid">' + items + '</div>';
+    setTimeout(function(){ try{ window.print(); }catch(e){} }, 80);
+  }
+  document.getElementById('wl-print-btn').addEventListener('click', buildPrint);
   badgeEl.addEventListener('click', function(){ if(dupCount()>0) openManager(); });
 
   /* ==================== डिफ़ॉल्ट पर लौटें ==================== */
