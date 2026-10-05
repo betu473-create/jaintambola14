@@ -5,9 +5,9 @@
    - PWABuilder / FreeWebToApk से बिना वॉटरमार्क वाला
      100% फ़्री परमानेंट APK बनाया जा सकता है
    - नया कोड अपलोड करने के बाद CACHE नंबर बढ़ा दें
-     (जैसे 'jain-tambola-v72' से 'jain-tambola-v72')
+     (जैसे 'jain-tambola-v72' से 'jain-tambola-v73')
    ============================================================ */
-const CACHE = 'jain-tambola-v80';
+const CACHE = 'jain-tambola-v81';
 
 const ASSETS = [
   './',
