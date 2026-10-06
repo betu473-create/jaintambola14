@@ -48,6 +48,7 @@
     <input class="txt" id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off" style="text-align:center;letter-spacing:6px;font-size:1.2rem">
     <button class="btn" id="pin-ok" type="button">खोलें 🔓</button>
     <p class="muted" id="pin-msg" style="display:none;color:#c62828;margin:8px 0 0;font-size:.9rem">गलत PIN — दोबारा कोशिश करें</p>
+    <p class="muted" style="margin:12px 0 0;font-size:.85rem"><a href="#" id="pin-change" style="text-decoration:underline">🔑 PIN बदलें</a></p>
   </div>
 
   <div class="card" style="text-align:center">
@@ -81,6 +82,8 @@
     /* होस्ट बटन: पहले PIN (v5.6.6) — सही PIN पर यह फोन 'खुला' याद रहता है */
     var HOST_PIN_HASH = 'f898c0e2fa3b9767f4e8e8e98c4a29bb98664b2a6f7b9e67129aa90915ed8a4a';
     var PIN_MAX_TRIES = 5, PIN_LOCK_MS = 30 * 60 * 1000; /* 5 गलत PIN = 30 मिनट बंद (v5.6.7) */
+    /* v5.9: PIN अब बदला जा सकता है — फ़ोन में सेव रहता है; न हो तो डिफ़ॉल्ट */
+    function _curPinHash(){ try{ return localStorage.getItem('jt-pin-hash') || HOST_PIN_HASH; }catch(e){ return HOST_PIN_HASH; } }
     function _pinFails(){ try{ return parseInt(localStorage.getItem('jt-pin-fail') || '0', 10) || 0; }catch(e){ return 0; } }
     function _pinLockUntil(){ try{ return parseInt(localStorage.getItem('jt-pin-lock') || '0', 10) || 0; }catch(e){ return 0; } }
     function _pinLocked(){ return Date.now() < _pinLockUntil(); }
@@ -133,7 +136,7 @@
       var v = (inp && inp.value ? String(inp.value) : '').trim();
       if(!v) return;
       _sha256hex(v).then(function(h){
-        if(h && h === HOST_PIN_HASH){
+        if(h && h === _curPinHash()){
           try{ localStorage.setItem('jt-host-ok','1'); localStorage.setItem('jt-host-ok-time', String(Date.now())); localStorage.setItem('jt-role','host');
                localStorage.removeItem('jt-pin-fail'); localStorage.removeItem('jt-pin-lock'); }catch(e){}
           location.href = './host.html';
@@ -158,6 +161,28 @@
     var pinOk = document.getElementById('pin-ok'), pinInp = document.getElementById('pin-input');
     if(pinOk) pinOk.addEventListener('click', _tryPin);
     if(pinInp) pinInp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); _tryPin(); } });
+    /* 🔑 PIN बदलें (v5.9): पहले अभी का PIN, फिर नया PIN (4 अंक) */
+    var pinCh = document.getElementById('pin-change');
+    if(pinCh) pinCh.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var cur = window.prompt('अभी का PIN डालें:');
+      if(cur === null) return;
+      _sha256hex(String(cur).trim()).then(function(h){
+        if(!h || h !== _curPinHash()){ window.alert('गलत PIN — बदलाव नहीं हुआ।'); return; }
+        var np = window.prompt('नया 4-अंकों का PIN डालें:');
+        if(np === null) return;
+        np = String(np).trim();
+        if(!/^[0-9]{4}$/.test(np)){ window.alert('PIN 4 अंकों का होना चाहिए (सिर्फ़ अंक)।'); return; }
+        var np2 = window.prompt('नया PIN दोबारा डालें:');
+        if(np2 === null) return;
+        if(String(np2).trim() !== np){ window.alert('दोनों PIN मेल नहीं खाए।'); return; }
+        _sha256hex(np).then(function(h2){
+          if(!h2){ window.alert('इस ब्राउज़र में PIN सेट नहीं हो सकता।'); return; }
+          try{ localStorage.setItem('jt-pin-hash', h2); }catch(e){}
+          window.alert('✅ नया PIN सेट हो गया! अब इसी PIN से होस्ट स्क्रीन खुलेगी।');
+        });
+      });
+    });
     document.getElementById('role-reset').addEventListener('click', function(e){
       e.preventDefault();
       try{ localStorage.removeItem('jt-role'); }catch(err){}
