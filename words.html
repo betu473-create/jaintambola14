@@ -128,6 +128,30 @@
       <span class="muted" id="wl-voice-count" style="font-size:.85rem"></span>
     </div>
     <div class="wl-warn" id="wl-voice-note" style="display:none;background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20">🎙 <b>आवाज़ मोड चालू है</b> — हर शब्द के सामने 🎙 दबाकर शब्द बोलें, फिर उसी बटन (⏹) से रोकें। रिकॉर्ड हुई आवाज़ गेम में शब्द निकलने पर बजेगी। ▶️ से सुनकर जाँचें। (गेम हमेशा इसी फोन से होस्ट करें)</div>
+    <button class="btn green" id="wl-bulk-rec-btn" type="button" style="width:100%;margin-top:6px">🎙 बल्क रिकॉर्डिंग — एक-एक करके सारे शब्द</button>
+
+    <div id="bulk-rec" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:center;justify-content:center;padding:14px">
+      <div style="background:#fff;border-radius:16px;padding:18px;max-width:460px;width:100%;text-align:center">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <b style="color:#4e342e">🎙 बल्क रिकॉर्डिंग</b>
+          <button class="btn small ghost" id="bulk-close" type="button">✖ बंद</button>
+        </div>
+        <div id="bulk-pos" style="margin:10px 0 2px;font-weight:700;color:#6d4c41"></div>
+        <div id="bulk-word" style="font-size:2.4rem;font-weight:900;color:#bf360c;margin:6px 0;word-break:break-word"></div>
+        <div id="bulk-state" style="font-size:.95rem;color:#2e7d32;min-height:1.3em;font-weight:700"></div>
+        <div style="height:8px;background:#ffe0b2;border-radius:6px;margin:12px 0;overflow:hidden"><div id="bulk-bar" style="height:100%;width:0;background:#f57c00"></div></div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn small ghost" id="bulk-prev" type="button">◀ पिछला</button>
+          <button class="btn" id="bulk-recbtn" type="button" style="background:#c62828;border-color:#c62828;color:#fff">🔴 रिकॉर्ड</button>
+          <button class="btn small ghost" id="bulk-skip" type="button">⏭ छोड़ें</button>
+          <button class="btn small" id="bulk-next" type="button">अगला ▶</button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;font-size:.9rem;color:#5d4037">
+          <input type="checkbox" id="bulk-onlymissing" checked> सिर्फ बिना रिकॉर्ड वाले शब्द दिखाएँ
+        </label>
+        <p style="font-size:.82rem;color:#8d6e63;margin:10px 0 0">एक शब्द बोलिए → "रिकॉर्ड" दबाकर रोकिए → अगला शब्द अपने-आप आ जाएगा। "अगला" दबाकर कभी भी आगे बढ़ सकते हैं।</p>
+      </div>
+    </div>
     <div class="wl-warn" id="wl-warn"></div>
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn" id="wl-dedupe" type="button" style="width:100%;margin-top:6px;background:#c62828;color:#fff;border-color:#c62828">🔍 डुप्लिकेट प्रबंधक खोलें</button>
@@ -547,6 +571,83 @@
     if(voiceMode) refreshRecorded();
     else { document.getElementById('wl-voice-count').textContent = ''; render(search.value); }
   });
+
+  /* ==================== 🎙 बल्क रिकॉर्डिंग (v6.4) ==================== */
+  var bulkList = [], bulkIdx = 0, bulkOnlyMissing = true, bulkRecMr = null, bulkRecStream = null, bulkChunks = [], bulkWord = null;
+
+  function bulkRebuild(){
+    bulkList = [];
+    for(var i=0;i<SHABD_LIST.length;i++){
+      var w = SHABD_LIST[i];
+      if(bulkOnlyMissing && recorded[w]) continue;
+      bulkList.push(w);
+    }
+    if(bulkIdx >= bulkList.length) bulkIdx = Math.max(0, bulkList.length-1);
+    if(bulkIdx < 0) bulkIdx = 0;
+  }
+  function bulkPaint(){
+    if(!bulkList.length){
+      document.getElementById('bulk-word').textContent = '—';
+      document.getElementById('bulk-pos').textContent = 'सब शब्द रिकॉर्ड हो चुके हैं 🎉';
+      document.getElementById('bulk-state').textContent = '';
+      document.getElementById('bulk-bar').style.width = '100%';
+      return;
+    }
+    var w = bulkList[bulkIdx];
+    document.getElementById('bulk-word').textContent = w;
+    document.getElementById('bulk-pos').textContent = 'शब्द ' + (bulkIdx+1) + ' / ' + bulkList.length;
+    document.getElementById('bulk-state').textContent = recorded[w] ? '✅ रिकॉर्ड हो चुका' : '⏳ अभी नहीं';
+    document.getElementById('bulk-bar').style.width = Math.round(bulkIdx / bulkList.length * 100) + '%';
+  }
+  function bulkOpen(){
+    document.getElementById('bulk-rec').style.display = 'flex';
+    if(window.jtVoice){
+      jtVoice.keys().then(function(ks){
+        recorded = {}; (ks||[]).forEach(function(w){ recorded[w] = true; });
+        bulkRebuild(); bulkPaint();
+      });
+    } else { bulkRebuild(); bulkPaint(); }
+  }
+  function bulkStartRec(){
+    if(!bulkList.length) return;
+    if(!navigator.mediaDevices || !window.MediaRecorder){ toast('⚠️ इस ब्राउज़र में रिकॉर्डिंग नहीं चलती — Chrome आज़माएँ'); return; }
+    var word = bulkList[bulkIdx];
+    navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+      bulkRecStream = stream; bulkChunks = []; bulkWord = word;
+      bulkRecMr = new MediaRecorder(stream);
+      bulkRecMr.ondataavailable = function(e){ if(e.data && e.data.size) bulkChunks.push(e.data); };
+      bulkRecMr.onstop = function(){
+        try{ bulkRecStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+        var blob = new Blob(bulkChunks, { type:(bulkRecMr && bulkRecMr.mimeType) || 'audio/webm' });
+        var w = bulkWord; bulkWord = null;
+        var rb = document.getElementById('bulk-recbtn');
+        if(rb){ rb.textContent = '🔴 रिकॉर्ड'; rb.style.background = '#c62828'; }
+        if(blob.size < 300){ toast('⚠️ आवाज़ बहुत छोटी रही — दोबारा कोशिश करें'); return; }
+        jtVoice.put(w, blob).then(function(ok){
+          if(ok){ recorded[w] = true; toast('✅ सेव: ' + w); } else { toast('⚠️ आवाज़ सेव नहीं हो पाई'); }
+          document.getElementById('bulk-state').textContent = ok ? '✅ रिकॉर्ड हो गया' : '⚠️ सेव नहीं हुआ';
+          setTimeout(function(){
+            bulkRebuild();
+            if(!bulkOnlyMissing){ bulkIdx = Math.min(bulkIdx+1, bulkList.length-1); }
+            bulkPaint();
+          }, 400);
+        });
+      };
+      try{ bulkRecMr.start(); }catch(e){ bulkWord = null; return; }
+      var rb = document.getElementById('bulk-recbtn');
+      if(rb){ rb.textContent = '⏹ रोकें'; rb.style.background = '#2e7d32'; }
+      toast('🔴 बोलिए: \"' + word + '\" — फिर "रोकें" दबाएँ');
+    }).catch(function(){ toast('🎙 माइक की अनुमति नहीं मिली'); });
+  }
+  function bulkStopRec(){ if(bulkRecMr && bulkRecMr.state !== 'inactive'){ try{ bulkRecMr.stop(); }catch(e){} } }
+
+  document.getElementById('wl-bulk-rec-btn').addEventListener('click', bulkOpen);
+  document.getElementById('bulk-close').addEventListener('click', function(){ bulkStopRec(); document.getElementById('bulk-rec').style.display = 'none'; refreshRecorded(); });
+  document.getElementById('bulk-prev').addEventListener('click', function(){ if(bulkIdx>0){ bulkIdx--; bulkPaint(); } });
+  document.getElementById('bulk-next').addEventListener('click', function(){ if(bulkIdx<bulkList.length-1){ bulkIdx++; bulkPaint(); } });
+  document.getElementById('bulk-skip').addEventListener('click', function(){ if(bulkIdx<bulkList.length-1){ bulkIdx++; bulkPaint(); } else { toast('यह आख़िरी शब्द है'); } });
+  document.getElementById('bulk-recbtn').addEventListener('click', function(){ if(bulkWord){ bulkStopRec(); } else { bulkStartRec(); } });
+  document.getElementById('bulk-onlymissing').addEventListener('change', function(){ bulkOnlyMissing = this.checked; bulkIdx = 0; bulkRebuild(); bulkPaint(); });
 
   /* ==================== जोड़ना ==================== */
   function addWord(){
