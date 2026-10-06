@@ -99,7 +99,28 @@ if('serviceWorker' in navigator){
     });
     (document.body || document.documentElement).appendChild(b);
   }
-  function start(){ apply(); addBtn(); }
+  function injectCSS(){
+    if(document.getElementById('jt-a11y-css')) return;
+    var s = document.createElement('style');
+    s.id = 'jt-a11y-css';
+    s.textContent =
+      'html.jt-big{font-size:118%;}' +
+      'html.jt-big .btn{font-size:1.14rem;padding:16px 20px;}' +
+      'html.jt-big .btn.small{font-size:.98rem;}' +
+      'html.jt-big .muted{font-size:.98rem;}' +
+      'html.jt-big .txt,html.jt-big input,html.jt-big select,html.jt-big textarea{font-size:1.12rem;}' +
+      'html.jt-big .card h2,html.jt-big h2{font-size:1.3rem;}' +
+      'html.jt-big .chip,html.jt-big .tag,html.jt-big .player-pill{font-size:.95rem;}' +
+      'html.jt-big .toast{font-size:1rem;}' +
+      'html.jt-big body{color:#241812;}' +
+      'html.jt-big .muted{color:#4e342e;}' +
+      'html.jt-big .card{border-color:#e0c9a6;}' +
+      '#jt-a11y-btn{position:fixed;left:12px;bottom:12px;z-index:99998;background:#263238;color:#ffd54f;border:none;border-radius:999px;padding:10px 15px;font-weight:700;font-size:.86rem;font-family:inherit;box-shadow:0 3px 12px rgba(0,0,0,.35);cursor:pointer;opacity:.94}' +
+      '#jt-a11y-btn:active{transform:scale(.96)}' +
+      '@media print{#jt-a11y-btn{display:none}}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function start(){ injectCSS(); apply(); addBtn(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
