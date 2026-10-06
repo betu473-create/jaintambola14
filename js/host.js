@@ -22,6 +22,8 @@ let deck = [], drawn = [];
 const drawnSet = new Set();
 let autoTimer = null, autoTotal = 10, autoLeft = 0;
 let claimsFirst = true;
+let autoVerify = true;   /* v6.3: क्लेम ऑटो-सत्यापन — सिस्टम खुद जाँचे */
+try{ autoVerify = localStorage.getItem('jt_auto_verify') !== '0'; }catch(e){}
 let muted = false;
 let gameStartTime = null, timerInterval = null;
 let musicAudio = null;
@@ -803,6 +805,27 @@ function handleClaim(conn, d){
   const prizeOn = (prize === 'full') || !!prizes[prize];
   const valid = prizeOn && validateClaimPrize(d, prize);
   const label = PRIZE_LABELS[prize] || 'फुल हाउस';
+  /* v6.3: ऑटो-सत्यापन चालू → सिस्टम तुरंत निर्णय देता है */
+  if(autoVerify){
+    if(winnerFull || !prizeOn || prizeWinners[prize]){
+      logClaimRow('🙋 देर से क्लेम', name, label, false);
+      try{ conn.send({ type:'claim-result', ok:false, late:true }); }catch(e){}
+      return;
+    }
+    if(valid){
+      logClaimRow('🤖 स्वतः मंज़ूर', name, label, true);
+      try{ beep(1150, 0.25); }catch(e){}
+      toast('🤖 ' + name + ' — ' + label + ' सही पाया गया, स्वतः मंज़ूर');
+      setStatus('🤖 ' + name + ' का ' + label + ' क्लेम सही पाया गया — स्वतः मंज़ूर।');
+      finishClaim(name, conn, prize);
+    }else{
+      logClaimRow('🤖 स्वतः नामंज़ूर (अमान्य)', name, label, false);
+      try{ conn.send({ type:'claim-result', ok:false, invalid:true }); }catch(e){}
+      toast('❌ ' + name + ' का ' + label + ' क्लेम अमान्य पाया गया');
+      setStatus('❌ ' + name + ' का ' + label + ' क्लेम सिस्टम ने अमान्य पाया (खिलाड़ी को तुरंत बताया गया)।');
+    }
+    return;
+  }
   /* गेम खत्म, राउंड बंद, या राउंड जीता जा चुका — देर वाली/अमान्य क्लेम */
   if(winnerFull || !prizeOn || prizeWinners[prize]){
     if(claimsFirst){ $('claims').innerHTML = ''; claimsFirst = false; }
@@ -814,9 +837,10 @@ function handleClaim(conn, d){
     try{ conn.send({ type:'claim-result', ok:false, late:true }); }catch(e){}
     return;
   }
-  /* अगर पहले से कोई क्लेम pending है तो उसे हटा दो (सिर्फ एक क्लेम एक बार में) */
+  /* v6.3: पहले वाला क्लेम होस्ट के पास है — नए क्लेम को प्रतीक्षा बताओ (पुराने को न हटाओ) */
   if(pendingClaim){
-    try{ pendingClaim.conn.send({ type:'claim-result', ok:false, late:true }); }catch(e){}
+    try{ conn.send({ type:'claim-result', ok:false, waiting:true }); }catch(e){}
+    return;
   }
   pendingClaim = { conn: conn, name: name, prize: prize, ticket: d.ticket || [], marks: d.marks || [] };
   beep(1100, 0.3);
@@ -862,13 +886,8 @@ function renderPendingClaim(sysValid){
   box.prepend(item);
 }
 
-function approveClaim(){
-  if(!pendingClaim) return;
-  const name = pendingClaim.name;
-  const conn = pendingClaim.conn;
-  const prize = pendingClaim.prize || 'full';
+function finishClaim(name, conn, prize){
   const label = PRIZE_LABELS[prize] || 'फुल हाउस';
-  pendingClaim = null;
   prizeWinners[prize] = name;
   renderPrizeWinners();
   try{ dlAddWinner(name, prize); }catch(e){}   /* v5.9: लॉग */
@@ -891,6 +910,25 @@ function approveClaim(){
   }
   /* v5.6.19: फुल हाउस विजेता दर्ज — 1/2/3 जीत तक गेम चलेगा */
   registerFullWinner(name, true);
+}
+
+/* v6.3: क्लेम रिपोर्ट में एक पंक्ति जोड़ो */
+function logClaimRow(icon, name, label, ok){
+  if(claimsFirst){ $('claims').innerHTML = ''; claimsFirst = false; }
+  const row = document.createElement('div');
+  row.className = 'claim-row';
+  row.style.borderLeftColor = ok ? '#2e7d32' : '#e53935';
+  row.textContent = icon + ' — ' + name + ' • ' + label + ' (' + new Date().toLocaleTimeString('hi-IN') + ')';
+  $('claims').prepend(row);
+}
+
+function approveClaim(){
+  if(!pendingClaim) return;
+  const name = pendingClaim.name;
+  const conn = pendingClaim.conn;
+  const prize = pendingClaim.prize || 'full';
+  pendingClaim = null;
+  finishClaim(name, conn, prize);
 }
 
 function rejectClaim(){
@@ -1516,6 +1554,21 @@ function dlPrint(){
     try{ localStorage.setItem('jt_family', familyMode ? '1' : '0'); }catch(e){}
     try{ broadcast({ type:'family', on:familyMode }); }catch(e){}
     try{ toast(familyMode ? '👨👩👧 फैमिली मोड चालू — अब खिलाड़ी नाम-वार टिकट ले सकते हैं' : 'फैमिली मोड बंद'); }catch(e){}
+  });
+})();
+
+
+/* ============================================================
+   🤖 क्लेम ऑटो-सत्यापन — होस्ट सेटिंग (v6.3)
+   ============================================================ */
+(function(){
+  var cb = document.getElementById('auto-verify');
+  if(!cb) return;
+  try{ cb.checked = !!autoVerify; }catch(e){}
+  cb.addEventListener('change', function(){
+    autoVerify = !!cb.checked;
+    try{ localStorage.setItem('jt_auto_verify', autoVerify ? '1' : '0'); }catch(e){}
+    try{ toast(autoVerify ? '🤖 क्लेम ऑटो-सत्यापन चालू' : '🤖 ऑटो-सत्यापन बंद — अब आप खुद हर क्लेम का निर्णय देंगे'); }catch(e){}
   });
 })();
 
