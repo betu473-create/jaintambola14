@@ -508,6 +508,7 @@ function registerFullWinner(name, viaHost){
   if(fullWinners.indexOf(name) !== -1) return;   /* एक ही आदमी दो बार नहीं */
   fullWinners.push(name);
   addWinnerToBoard(name);
+  try{ dlAddWinner(name, 'full'); }catch(e){}   /* v5.9: लॉग */
   const tgt = fullTarget();
   const n = fullWinners.length;
   const row = document.createElement('div');
@@ -578,6 +579,7 @@ function drawWord(){
   const num = shabdNumber(w);
   drawn.push(w);
   drawnSet.add(w);
+  try{ dlAddWord(w, num); }catch(e){}   /* v5.9: स्थायी ड्रॉ लॉग */
   lastWord = w;
   if(!muted){
     musicDuck();
@@ -841,6 +843,7 @@ function approveClaim(){
   pendingClaim = null;
   prizeWinners[prize] = name;
   renderPrizeWinners();
+  try{ dlAddWinner(name, prize); }catch(e){}   /* v5.9: लॉग */
   if(prize !== 'full'){
     /* जल्दी पाँच / चार कोन / लाइन का विजेता — गेम जारी रहेगा */
     broadcast({ type:'claim-result', ok:true, name:name, prize:prize });
@@ -880,6 +883,7 @@ function rejectClaim(){
 $('winner-big-close').addEventListener('click', function(){ $('winner-big').classList.remove('show'); });
 
 function resetBoard(){
+  try{ dlStartGame(); }catch(e){}   /* v5.9: नया गेम — नया लॉग */
   pendingClaim = null;
   fullWinners = [];
   const el = $('current-shabd');
@@ -1344,4 +1348,129 @@ try{
     if(window.jtCheckUpdate){ window.jtCheckUpdate(function(t){ toast(t); }); }
     else{ toast('❌ अपडेट सुविधा नहीं मिली — पेज दोबारा खोलें'); }
   });
+})();
+
+
+/* ============================================================
+   📜 स्थायी ड्रॉ लॉग + एक्सपोर्ट (v5.9)
+   ------------------------------------------------------------
+   - हर गेम का पक्का रिकॉर्ड: निकले शब्द (क्रमांक + समय) + विजेता
+   - localStorage: jt_drawlog — आख़िरी 25 गेम (पुराने अपने-आप हटते हैं)
+   - निर्यात: CSV डाउनलोड + प्रिंट/PDF व्यू
+   ============================================================ */
+var DRAWLOG_KEY = 'jt_drawlog', DRAWLOG_MAX = 25;
+var _curGame = null;
+function _dlAll(){ try{ return JSON.parse(localStorage.getItem(DRAWLOG_KEY) || '[]'); }catch(e){ return []; } }
+function _dlWrite(arr){ try{ localStorage.setItem(DRAWLOG_KEY, JSON.stringify(arr.slice(0, DRAWLOG_MAX))); }catch(e){} }
+function _dlFlush(){
+  if(!_curGame) return;
+  var arr = _dlAll().filter(function(g){ return g.id !== _curGame.id; });
+  arr.unshift(_curGame);
+  _dlWrite(arr);
+  try{ renderDrawLog(); }catch(e){}
+}
+function dlStartGame(){
+  _curGame = { id: Date.now(), date: new Date().toISOString(), words: [], winners: [] };
+  _dlFlush();
+}
+function dlAddWord(w, num){
+  if(!_curGame) dlStartGame();
+  _curGame.words.push({ w: String(w), n: num || 0, t: Date.now() });
+  _dlFlush();
+}
+function dlAddWinner(name, prize){
+  if(!_curGame) dlStartGame();
+  _curGame.winners.push({ name: String(name), prize: prize || 'full', t: Date.now() });
+  _dlFlush();
+}
+function _dlFmt(ms){ try{ return new Date(ms).toLocaleString('hi-IN'); }catch(e){ return ''; } }
+function _dlEsc(s){ return String(s).replace(/[<>&]/g, function(c){ return c === '<' ? '&lt;' : (c === '>' ? '&gt;' : '&amp;'); }); }
+
+/* छोटा सारांश (रिपोर्ट सेक्शन में) */
+function renderDrawLog(){
+  var box = document.getElementById('drawlog-list');
+  if(!box) return;
+  var games = _dlAll();
+  if(!games.length){ box.innerHTML = '<span class="muted">अभी कोई गेम लॉग नहीं — गेम खेलते ही बन जाएगा।</span>'; return; }
+  var out = '<div style="margin-top:6px">';
+  games.slice(0, 5).forEach(function(g, gi){
+    var gn = games.length - gi;
+    var wn = (g.winners || []).map(function(x){ return _dlEsc(x.name); }).join(', ') || '—';
+    out += '<div style="border-left:3px solid #ffb74d;padding:4px 10px;margin:6px 0;font-size:.88rem">' +
+      '<b>गेम #' + gn + '</b> • ' + _dlFmt(g.id) + '<br>' +
+      'शब्द: ' + (g.words || []).length + ' • विजेता: ' + wn + '</div>';
+  });
+  out += '</div>';
+  if(games.length > 5) out += '<div class="muted" style="font-size:.82rem">…कुल ' + games.length + ' गेम लॉग में हैं</div>';
+  box.innerHTML = out;
+}
+
+/* CSV — पूरा लॉग */
+function dlCSV(){
+  var games = _dlAll();
+  var q = function(s){ return '"' + String(s).replace(/"/g, '""') + '"'; };
+  var out = '\uFEFFगेम_नं,दिनांक,प्रकार,विवरण,क्रमांक,समय\n';
+  games.forEach(function(g, gi){
+    var gn = games.length - gi;
+    (g.words || []).forEach(function(x, i){
+      out += [gn, q(_dlFmt(g.id)), 'शब्द', q(x.w), (x.n || ''), q(_dlFmt(x.t))].join(',') + '\n';
+    });
+    (g.winners || []).forEach(function(x){
+      out += [gn, q(_dlFmt(g.id)), 'विजेता', q(x.name), q(x.prize || ''), q(_dlFmt(x.t))].join(',') + '\n';
+    });
+  });
+  return out;
+}
+function dlDownloadCSV(){
+  var games = _dlAll();
+  if(!games.length){ try{ toast('अभी कोई लॉग नहीं'); }catch(e){} return; }
+  var blob = new Blob([dlCSV()], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tambola-game-log-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} }, 4000);
+  try{ toast('📥 लॉग डाउनलोड हो गया'); }catch(e){}
+}
+function dlPrint(){
+  var games = _dlAll();
+  if(!games.length){ try{ toast('अभी कोई लॉग नहीं'); }catch(e){} return; }
+  var html = '<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><title>ताम्बोला गेम लॉग</title>' +
+    '<style>body{font-family:"Noto Sans Devanagari","Nirmala UI",sans-serif;padding:20px;color:#241812}' +
+    'h1{font-size:1.25rem;color:#bf360c}table{border-collapse:collapse;width:100%;margin:6px 0 18px}' +
+    'th,td{border:1px solid #c9b79a;padding:5px 9px;font-size:.85rem;text-align:left}th{background:#f3e7d4}' +
+    '.g{font-weight:800;margin:16px 0 2px;color:#3e2723}</style></head><body>';
+  html += '<h1>📜 ताम्बोला — स्थायी गेम लॉग (ऑडिट ट्रेल)</h1>';
+  games.forEach(function(g, gi){
+    var gn = games.length - gi;
+    html += '<div class="g">गेम #' + gn + ' • ' + _dlFmt(g.id) + '</div>';
+    html += '<table><tr><th style="width:48px">क्र.</th><th>शब्द</th><th style="width:90px">क्रमांक</th><th style="width:170px">समय</th></tr>';
+    (g.words || []).forEach(function(x, i){ html += '<tr><td>' + (i + 1) + '</td><td>' + _dlEsc(x.w) + '</td><td>' + (x.n || '') + '</td><td>' + _dlFmt(x.t) + '</td></tr>'; });
+    html += '</table>';
+    if((g.winners || []).length){
+      html += '<table><tr><th>विजेता</th><th style="width:120px">प्राइज़</th><th style="width:170px">समय</th></tr>';
+      (g.winners || []).forEach(function(x){ html += '<tr><td>' + _dlEsc(x.name) + '</td><td>' + _dlEsc(x.prize || '') + '</td><td>' + _dlFmt(x.t) + '</td></tr>'; });
+      html += '</table>';
+    }
+  });
+  html += '</body></html>';
+  var w = window.open('', '_blank');
+  if(!w){ try{ toast('पॉपअप ब्लॉक है — अनुमति दें'); }catch(e){} return; }
+  w.document.write(html); w.document.close();
+  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 600);
+}
+
+/* बटन जोड़ो + पहली बार सारांश दिखाओ */
+(function(){
+  function wire(id, fn){ var b = document.getElementById(id); if(b) b.addEventListener('click', fn); }
+  wire('drawlog-csv', dlDownloadCSV);
+  wire('drawlog-print', dlPrint);
+  wire('drawlog-clear', function(){
+    if(!confirm('पूरा गेम लॉग (ऑडिट ट्रेल) हटाना है? यह वापस नहीं आएगा।')) return;
+    try{ localStorage.removeItem(DRAWLOG_KEY); }catch(e){}
+    _curGame = null; renderDrawLog();
+    try{ toast('🗑 लॉग साफ़ हो गया'); }catch(e){}
+  });
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderDrawLog);
+  else renderDrawLog();
 })();
