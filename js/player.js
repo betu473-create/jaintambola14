@@ -21,6 +21,9 @@ let myPrizes = { jp:false, corner:false, line:false };
 let roundWinners = {};
 let myClaimedRounds = {};
 let kickedOut = false;   /* 3 गलत क्लेम = गेम से बाहर */
+let myTickets = [];      /* v6.0: फैमिली मोड — कई (नाम-वार) टिकट */
+let activeTk = 0;
+let pendingMembers = null;
 
 /* ==================== रीकनेक्ट: टिकट सेव/रिस्टोर ==================== */
 function saveTicketLocal(roomCode, words, name){
@@ -147,6 +150,7 @@ function renderTicket(){
   });
   updateProgress();
   updateRepeatBtn();
+  try{ renderTicketTabs(); }catch(e){}
 }
 
 function tap(w, el){
@@ -164,6 +168,7 @@ function tap(w, el){
   beep(1320, 0.15);
   updateProgress();
   updateClaimBtn();
+  try{ if(myTickets[activeTk]){ myTickets[activeTk].marked = Array.from(markedSet); } renderTicketTabs(); }catch(e){}
   if(markedSet.size === JT_CONFIG.TICKET_CELLS){
     setGStatus('🏆 पूरे 12 खंड (Full House) पूरे! तुरंत Claim बटन दबाएँ');
     toast('🏆 फुल हाउस! अब Claim बटन दबाएँ');
@@ -172,6 +177,41 @@ function tap(w, el){
 
 function updateProgress(){
   $('progress').textContent = markedSet.size + ' / ' + JT_CONFIG.TICKET_CELLS + ' शब्द पूरे';
+}
+/* ---------- v6.0: फैमिली मोड — कई टिकट ---------- */
+function applyTickets(list){
+  myTickets = (Array.isArray(list) ? list : []).map(function(t){
+    return { name: String(t.name || 'खिलाड़ी').slice(0,30), detail: String(t.detail || '').slice(0,30),
+             words: Array.isArray(t.words) ? t.words.slice() : [],
+             nums: Array.isArray(t.nums) ? t.nums.slice() : [], marked: [] };
+  });
+  if(myTickets.length) loadTicket(0); else { renderTicketTabs(); }
+}
+function saveTicket(i){ var t = myTickets[i]; if(!t) return; t.words = myTicket.slice(); t.nums = myNums.slice(); t.marked = Array.from(markedSet); }
+function loadTicket(i){
+  if(i < 0 || i >= myTickets.length) return;
+  activeTk = i;
+  var t = myTickets[i];
+  myTicket = (t.words || []).slice();
+  myNums = (t.nums || []).slice();
+  markedSet.clear();
+  (t.marked || []).forEach(function(w){ markedSet.add(w); });
+  renderTicket(); updateProgress(); updateClaimBtn(); renderTicketTabs();
+}
+function renderTicketTabs(){
+  var box = $('ticket-tabs');
+  if(!box) return;
+  if(myTickets.length < 2){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = 'flex';
+  box.innerHTML = '';
+  myTickets.forEach(function(t, i){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn small' + (i === activeTk ? '' : ' ghost');
+    b.textContent = '👤 ' + t.name + ' ' + (t.marked || []).length + '/' + JT_CONFIG.TICKET_CELLS;
+    b.addEventListener('click', function(){ saveTicket(activeTk); loadTicket(i); });
+    box.appendChild(b);
+  });
 }
 
 /* ==================== रिपीट बटन (1 बार) ==================== */
@@ -225,6 +265,8 @@ function resetLocal(){
   repeatUsed.clear();
   myTicket = [];
   myNums = [];
+  myTickets = []; activeTk = 0;
+  try{ var _tb = $('ticket-tabs'); if(_tb){ _tb.style.display = 'none'; _tb.innerHTML = ''; } }catch(e){}
   $('ticket').innerHTML = '';
   $('repeat-btn').disabled = true;
   $('claim-btn').disabled = true;
@@ -262,6 +304,16 @@ function onData(d){
     const rc = ($('room-input').value || '').toUpperCase();
     saveTicketLocal(rc, myTicket, myName);
     setGStatus('🎟 आपकी डिजिटल टिकट तैयार! जैसे ही शब्द आए और वह टिकट में हो, तुरंत टैप करें');
+  }
+  else if(d.type === 'tickets'){
+    if(Array.isArray(d.drawn)) d.drawn.forEach(function(w){ drawnSet.add(w); });
+    if(d.prizes && typeof d.prizes === 'object'){ ['jp','corner','line'].forEach(function(k){ if(typeof d.prizes[k] === 'boolean') myPrizes[k] = d.prizes[k]; }); }
+    if(d.winners && typeof d.winners === 'object') roundWinners = d.winners;
+    applyTickets(d.list);
+    setGStatus('🎟 आपकी ' + myTickets.length + ' डिजिटल टिकटें तैयार! ऊपर टैब से टिकट बदलें, और शब्द आने पर टैप करें');
+  }
+  else if(d.type === 'family'){
+    var fb = $('fam-box'); if(fb){ fb.style.display = d.on ? '' : 'none'; }
   }
   else if(d.type === 'word'){ onWord(d.word, d.num, d.pack); }
   else if(d.type === 'reset'){ resetLocal(); }
@@ -533,7 +585,7 @@ function connectToHost(){
       $('game-card').style.display = 'block';
       $('p-name').textContent = '🙋 ' + myName;
       setGStatus('✅ जुड़ गए — होस्ट गेम शुरू करेगा');
-      try{ conn.send({ type:'join', name:myName, deviceId:deviceId() }); }catch(e){}
+      try{ conn.send({ type:'join', name:myName, deviceId:deviceId(), members:pendingMembers }); }catch(e){}
     });
     conn.on('data', onData);
     conn.on('close', function(){
@@ -552,6 +604,7 @@ function connectToHost(){
 
 function join(){
   myName = ($('name-input').value || '').trim();
+  try{ pendingMembers = collectMembers(); }catch(e){ pendingMembers = null; }
   const code = ($('room-input').value || '').trim().toUpperCase();
   if(!myName){ toast('कृपया अपना नाम लिखें'); return; }
   if(!/^[A-Z0-9]{6}$/.test(code)){ toast('रूम कोड सही नहीं है (6 अक्षर/अंक)'); return; }
@@ -578,6 +631,7 @@ $('claim-btn').addEventListener('click', function(){
       type:'claim',
       prize: prize,
       name:myName,
+      member:(myTickets[activeTk] && myTickets[activeTk].name) || myName,
       ticket:myTicket,
       marks:Array.from(markedSet)
     });

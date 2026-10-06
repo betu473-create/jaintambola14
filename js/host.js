@@ -11,7 +11,9 @@ function $(id){ return document.getElementById(id); }
 
 let peer = null;
 const conns = {}, players = {};
-let started = false, winnerFull = null, fullWinners = [];   /* v5.6.19: 1/2/3 फुल हाउस विजेता */
+let started = false, winnerFull = null, fullWinners = [];
+let familyMode = false;   /* v6.0: फैमिली मोड — एक फ़ोन पर कई टिकट */
+try{ familyMode = localStorage.getItem('jt_family') === '1'; }catch(e){}   /* v5.6.19: 1/2/3 फुल हाउस विजेता */
 function fullTarget(){
   try{ var v = parseInt(localStorage.getItem("jt_full_count"), 10); if(v === 2 || v === 3) return v; }catch(e){}
   return 1;
@@ -563,11 +565,19 @@ function gameOverNow(name, viaHost){
 function checkAutoFullHouse(){
   if(winnerFull || !started) return;
   Object.keys(players).forEach(function(id){
-    const t = players[id] && players[id].ticket;
-    if(Array.isArray(t) && t.length === JT_CONFIG.TICKET_CELLS &&
-       t.every(function(w){ return drawnSet.has(w); })){
-      registerFullWinner(players[id].name || 'खिलाड़ी', false);
+    var pl = players[id]; if(!pl) return;
+    var lists = [];
+    if(Array.isArray(pl.tickets)){
+      pl.tickets.forEach(function(tk){ if(tk && Array.isArray(tk.words)) lists.push({ name: tk.name || pl.name, words: tk.words }); });
     }
+    if(Array.isArray(pl.ticket) && pl.ticket.length) lists.push({ name: pl.name, words: pl.ticket });
+    lists.forEach(function(tk){
+      var t = tk.words;
+      if(Array.isArray(t) && t.length === JT_CONFIG.TICKET_CELLS &&
+         t.every(function(w){ return drawnSet.has(w); })){
+        registerFullWinner(tk.name || 'खिलाड़ी', false);
+      }
+    });
   });
 }
 
@@ -643,11 +653,28 @@ function makeTicket(){
   return shuffle(src.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
 }
 function sendTicketTo(conn){
+  var _pl = players[conn.peer];
+  var mem = _pl && Array.isArray(_pl.members) ? _pl.members : null;
+  /* v6.0: फैमिली मोड — हर सदस्य के लिए अलग (नाम-वार) टिकट */
+  if(familyMode && mem && mem.length > 1){
+    var list = mem.map(function(m){
+      var w = makeTicket();
+      return { name: String((m && m.name) || 'खिलाड़ी').slice(0,30),
+               detail: String((m && m.detail) || '').slice(0,30),
+               words: w, nums: w.map(function(x){ return shabdNumber(x); }) };
+    });
+    if(_pl){ _pl.tickets = list; _pl.ticket = list[0].words; }
+    try{
+      conn.send({ type:'tickets', list:list, drawn:drawn, prizes:prizes, winners:prizeWinners, family:true });
+      try{ conn.send({ type:'music', on:musicOn }); }catch(e){}
+    }catch(e){}
+    return;
+  }
   const words = makeTicket();
   if(players[conn.peer]) players[conn.peer].ticket = words;
   const nums = words.map(function(w){ return shabdNumber(w); });   /* क्रमांक भी भेजो (v5.6.9) */
   try{
-    conn.send({ type:'ticket', words:words, nums:nums, drawn:drawn, prizes:prizes, winners:prizeWinners });
+    conn.send({ type:'ticket', words:words, nums:nums, drawn:drawn, prizes:prizes, winners:prizeWinners, family:familyMode });
         try{ conn.send({ type:'music', on:musicOn }); }catch(e){}
   }catch(e){}
 }
@@ -686,7 +713,8 @@ function handleData(conn, d){
     players[conn.peer] = {
       name: String(d.name).trim().slice(0, 30) || 'खिलाड़ी',
       deviceId: devId,
-      ticket: existingTicket || null
+      ticket: existingTicket || null,
+      members: Array.isArray(d.members) ? d.members.slice(0, 6) : null   /* v6.0: फैमिली मोड */
     };
     /* होस्ट-रिकनेक्ट का सेव किया खिलाड़ी — उसी डिवाइस का डुप्लिकेट हटाओ */
     if(devId){
@@ -1473,4 +1501,20 @@ function dlPrint(){
   });
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderDrawLog);
   else renderDrawLog();
+})();
+
+
+/* ============================================================
+   👨👩👧 फैमिली मोड — होस्ट सेटिंग (v6.0)
+   ============================================================ */
+(function(){
+  var cb = document.getElementById('family-mode');
+  if(!cb) return;
+  try{ cb.checked = !!familyMode; }catch(e){}
+  cb.addEventListener('change', function(){
+    familyMode = !!cb.checked;
+    try{ localStorage.setItem('jt_family', familyMode ? '1' : '0'); }catch(e){}
+    try{ broadcast({ type:'family', on:familyMode }); }catch(e){}
+    try{ toast(familyMode ? '👨👩👧 फैमिली मोड चालू — अब खिलाड़ी नाम-वार टिकट ले सकते हैं' : 'फैमिली मोड बंद'); }catch(e){}
+  });
 })();

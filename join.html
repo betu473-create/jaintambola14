@@ -29,6 +29,20 @@
     <h2>🎯 गेम में शामिल हों</h2>
     <div class="status" id="p-status">होस्ट से मिले लिंक पर आप सही जगह पर हैं — अपना नाम लिखकर जुड़ें।</div>
     <input class="txt" id="name-input" placeholder="अपना नाम लिखें" maxlength="30" autocomplete="name">
+    <details id="fam-box" style="margin-top:8px">
+      <summary style="cursor:pointer;font-weight:800;color:#e65100">👨👩👧 फैमिली मोड — एक फ़ोन पर कई टिकट</summary>
+      <p class="muted" style="margin:8px 0 4px">पूरे परिवार के लिए एक ही फ़ोन से कई टिकट (हर एक अपने नाम से) लेने के लिए — <b>होस्ट की सेटिंग में फैमिली मोड चालू होना ज़रूरी है</b>। नीचे कितने टिकट और किसके नाम बताइए।</p>
+      <select class="txt" id="fam-count">
+        <option value="1">1 टिकट (सामान्य)</option>
+        <option value="2">2 टिकट</option>
+        <option value="3" selected>3 टिकट</option>
+        <option value="4">4 टिकट</option>
+        <option value="5">5 टिकट</option>
+        <option value="6">6 टिकट</option>
+      </select>
+      <div id="fam-names"></div>
+    </details>
+    <p class="muted" id="fam-note" style="margin-top:8px">👨👩👧 परिवार के लिए एक साथ कई टिकट चाहिए? अपने <b>होस्ट से संपर्क करें</b> — होस्ट सेटिंग से फैमिली मोड चालू करेगा, फिर आपको नाम-वार टिकटें मिल जाएँगी।</p>
     <div id="room-label">
       <input class="txt" id="room-input" placeholder="रूम कोड (6 अक्षर)" maxlength="6" style="text-transform:uppercase" autocomplete="off">
     </div>
@@ -50,6 +64,7 @@
     </div>
 
     <div class="card">
+      <div id="ticket-tabs" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
       <div id="ticket-print">
         <div class="progress" id="progress">0 / 12 शब्द पूरे</div>
         <div class="ticket" id="ticket"></div>
