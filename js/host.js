@@ -1518,3 +1518,21 @@ function dlPrint(){
     try{ toast(familyMode ? '👨👩👧 फैमिली मोड चालू — अब खिलाड़ी नाम-वार टिकट ले सकते हैं' : 'फैमिली मोड बंद'); }catch(e){}
   });
 })();
+
+
+/* ============================================================
+   🔢 "पूरी सूची (सभी N)" — असली गिनती (v6.2)
+   ------------------------------------------------------------
+   पहले यहाँ 521 हाथ से लिखा था; सूची बढ़ने पर वह पुराना ही रहता।
+   अब सूची के असली आकार से दिखाता है।
+   ============================================================ */
+(function(){
+  function upd(){
+    var o = document.getElementById('full-list-opt');
+    if(!o) return;
+    var n = (typeof SHABD_LIST !== 'undefined' && SHABD_LIST && SHABD_LIST.length) ? SHABD_LIST.length : 0;
+    if(n) o.textContent = 'गेम के शब्द: पूरी सूची (सभी ' + n + ')';
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', upd);
+  else upd();
+})();
