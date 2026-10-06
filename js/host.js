@@ -1591,3 +1591,100 @@ function dlPrint(){
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', upd);
   else upd();
 })();
+
+
+/* ============================================================
+   📅 गेम शेड्यूल + याद दिलाना (v6.7)
+   ------------------------------------------------------------
+   (1) होस्ट के फ़ोन पर अपने-आप याद-दिलाना (notification + toast)
+   (2) एक टैप में WhatsApp पर तैयार संदेश
+   ============================================================ */
+(function(){
+  var K = 'jt_schedule';
+  function load(){ try{ return JSON.parse(localStorage.getItem(K) || 'null'); }catch(e){ return null; } }
+  function save(o){ try{ localStorage.setItem(K, JSON.stringify(o)); }catch(e){} }
+  function clearS(){ try{ localStorage.removeItem(K); }catch(e){} }
+  function fmt(ts){ try{ return new Date(ts).toLocaleString('hi-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }catch(e){ return ''; } }
+  function waMsg(){
+    var s = load();
+    var when = (s && s.ts) ? fmt(s.ts) : 'जल्द';
+    var url = '';
+    try{ url = jtSiteUrl() + '/join.html'; }catch(e){}
+    return '॥ जैन ताम्बोला ॥\n🎲 अगला गेम: ' + when + '\nऐप खोलें: ' + url + '\n(रूम कोड गेम से पहले भेजा जाएगा)';
+  }
+  function waHref(){ return 'https://wa.me/?text=' + encodeURIComponent(waMsg()); }
+  function paint(){
+    var st = document.getElementById('sch-status');
+    var wa = document.getElementById('sch-wa');
+    if(!st) return;
+    var s = load();
+    if(wa){ wa.style.display = 'none'; }
+    if(!s || !s.ts){ st.textContent = 'कोई शेड्यूल सेट नहीं।'; return; }
+    var d = s.ts - Date.now();
+    if(s.fired){
+      st.innerHTML = '✅ ' + fmt(s.ts) + ' का याद-दिलाना भेज दिया गया।';
+      if(wa){ wa.href = waHref(); wa.style.display = ''; }
+      return;
+    }
+    if(d <= 0){
+      st.innerHTML = '🔔 अब समय हो गया — WhatsApp पर सबको बता दें!';
+      if(wa){ wa.href = waHref(); wa.style.display = ''; }
+      return;
+    }
+    var mins = Math.round(d / 60000);
+    var left = mins > 90 ? Math.round(mins / 60) + ' घंटे' : mins + ' मिनट';
+    st.textContent = '⏰ अगला गेम: ' + fmt(s.ts) + ' (' + left + ' में)';
+    if(wa){ wa.href = waHref(); wa.style.display = ''; }
+  }
+  function fire(){
+    var s = load(); if(!s || !s.ts || s.fired) return;
+    if(Date.now() < s.ts) return;
+    s.fired = true; save(s);
+    try{
+      if(window.Notification && Notification.permission === 'granted'){
+        new Notification('🎲 तांबोला का समय!', { body: 'आज का गेम शुरू करने का समय है — WhatsApp पर सबको बता दें!' });
+      }
+    }catch(e){}
+    try{ toast('🔔 तांबोला का समय! नीचे WhatsApp पर भेजें'); }catch(e){}
+    paint();
+  }
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var dEl = document.getElementById('sch-date');
+    var tEl = document.getElementById('sch-time');
+    var sv = document.getElementById('sch-save');
+    var nf = document.getElementById('sch-notif');
+    var cl = document.getElementById('sch-clear');
+    if(!dEl || !tEl || !sv) return;
+    var s = load();
+    if(s && s.ts){
+      try{
+        var dt = new Date(s.ts);
+        var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+        dEl.value = dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+        tEl.value = pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+      }catch(e){}
+    }
+    sv.addEventListener('click', function(){
+      if(!dEl.value || !tEl.value){ toast('तारीख और समय दोनों चुनें'); return; }
+      var ts = new Date(dEl.value + 'T' + tEl.value).getTime();
+      if(isNaN(ts)){ toast('समय ठीक नहीं — दोबारा चुनें'); return; }
+      save({ ts: ts, fired: false });
+      try{ if(window.Notification && Notification.permission === 'default') Notification.requestPermission(); }catch(e){}
+      paint();
+      toast('✅ गेम ' + fmt(ts) + ' के लिए सेट — समय पर याद दिलाऊँगा');
+    });
+    if(nf) nf.addEventListener('click', function(){
+      try{
+        if(!window.Notification){ toast('इस ब्राउज़र में notification नहीं चलती'); return; }
+        Notification.requestPermission().then(function(p){
+          toast(p === 'granted' ? '🔔 अनुमति मिल गई — अब याद दिलाऊँगा' : '🔕 अनुमति नहीं मिली');
+        });
+      }catch(e){ toast('notification अनुमति नहीं मिली'); }
+    });
+    if(cl) cl.addEventListener('click', function(){ clearS(); paint(); toast('🗑 शेड्यूल हटा दिया'); });
+    paint();
+    setInterval(function(){ fire(); paint(); }, 30000);
+    fire();
+  });
+})();

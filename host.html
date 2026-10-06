@@ -143,6 +143,23 @@
     <p class="muted" style="margin:2px 0 0">🎯 गेम शुरू करने पर चुने हुए शब्दों में से ही टिकटें बनती हैं — इसलिए 90 शब्द वाला गेम तेज़ और मज़ेदार चलता है।</p>
   </div>
 
+  <!-- 📅 गेम शेड्यूल + याद दिलाना (v6.7) -->
+  <div class="card">
+    <h2>📅 गेम शेड्यूल + याद दिलाना</h2>
+    <p class="muted" style="margin:2px 0 8px">अगला गेम कब है तय करें — समय आते ही ऐप <b>खुद याद दिलाएगी</b>, और एक टैप में WhatsApp पर सबको भेज सकेंगे।</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input type="date" id="sch-date" style="padding:8px 10px;border:1.5px solid #e0c9a6;border-radius:10px;font-size:1rem">
+      <input type="time" id="sch-time" style="padding:8px 10px;border:1.5px solid #e0c9a6;border-radius:10px;font-size:1rem">
+      <button class="btn small green" id="sch-save" type="button">💾 सेट करें</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn small" id="sch-notif" type="button">🔔 याद-दिलाने की अनुमति दें</button>
+      <button class="btn small ghost" id="sch-clear" type="button">🗑 हटाएँ</button>
+    </div>
+    <div id="sch-status" style="margin-top:8px;font-weight:700;color:#3e2723;line-height:1.7"></div>
+    <a class="btn small" id="sch-wa" href="#" target="_blank" rel="noopener" style="display:none;margin-top:8px;text-decoration:none;text-align:center">📤 WhatsApp पर सबको भेजें</a>
+  </div>
+
   <div class="word-card">
     <div class="word-label">📢 अभी बोला गया शब्द</div>
     <div id="current-shabd">…</div>
