@@ -589,6 +589,7 @@ function drawWord(){
   if(!deck.length){ toast('सभी शब्द आ चुके हैं'); stopAuto(); return; }
   const w = deck.pop();
   const num = shabdNumber(w);
+  try{ if(window.jtAna) jtAna.count('words_drawn'); }catch(e){}
   drawn.push(w);
   drawnSet.add(w);
   try{ dlAddWord(w, num); }catch(e){}   /* v5.9: स्थायी ड्रॉ लॉग */
@@ -1554,6 +1555,7 @@ function dlPrint(){
     try{ localStorage.setItem('jt_family', familyMode ? '1' : '0'); }catch(e){}
     try{ broadcast({ type:'family', on:familyMode }); }catch(e){}
     try{ toast(familyMode ? '👨👩👧 फैमिली मोड चालू — अब खिलाड़ी नाम-वार टिकट ले सकते हैं' : 'फैमिली मोड बंद'); }catch(e){}
+    try{ if(familyMode && window.jtAna) jtAna.count('family_on'); }catch(e){}
   });
 })();
 

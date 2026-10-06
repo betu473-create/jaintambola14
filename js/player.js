@@ -642,6 +642,7 @@ $('claim-btn').addEventListener('click', function(){
     });
   }catch(e){}
   setGStatus('क्लेम भेजा गया (' + (PRIZE_LABELS[prize] || 'फुल हाउस') + ') — विजेता की घोषणा की प्रतीक्षा…');
+  try{ if(window.jtAna) jtAna.count('claims'); }catch(e){}
 });
 $('mute-btn').addEventListener('click', function(){
   muted = !muted;

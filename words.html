@@ -637,6 +637,7 @@
       var rb = document.getElementById('bulk-recbtn');
       if(rb){ rb.textContent = '⏹ रोकें'; rb.style.background = '#2e7d32'; }
       toast('🔴 बोलिए: \"' + word + '\" — फिर "रोकें" दबाएँ');
+      try{ if(window.jtAna) jtAna.count('bulk_rec'); }catch(e){}
     }).catch(function(){ toast('🎙 माइक की अनुमति नहीं मिली'); });
   }
   function bulkStopRec(){ if(bulkRecMr && bulkRecMr.state !== 'inactive'){ try{ bulkRecMr.stop(); }catch(e){} } }

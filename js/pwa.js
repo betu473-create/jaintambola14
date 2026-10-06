@@ -95,6 +95,7 @@ if('serviceWorker' in navigator){
     b.title = 'अक्षर छोटे/बड़े करें';
     b.addEventListener('click', function(){
       try{ localStorage.setItem('jt-big', on() ? '0' : '1'); }catch(e){}
+      try{ if(window.jtAna) jtAna.count('big_font'); }catch(e){}
       apply(); b.textContent = label();
     });
     (document.body || document.documentElement).appendChild(b);
@@ -123,4 +124,40 @@ if('serviceWorker' in navigator){
   function start(){ injectCSS(); apply(); addBtn(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
+})();
+
+
+/* ============================================================
+   📊 ऑप्ट-इन आँकड़े (v6.5)
+   ------------------------------------------------------------
+   सिर्फ इसी फ़ोन में गिनती — कुछ भी बाहर नहीं भेजा जाता।
+   डिफ़ॉल्ट बंद; चालू करने पर ही दर्ज होता है।
+   ============================================================ */
+(function(){
+  var K_ON = 'jt_analytics', K_ST = 'jt_ana_stats';
+  function enabled(){ try{ return localStorage.getItem(K_ON) === '1'; }catch(e){ return false; } }
+  function setEnabled(v){ try{ localStorage.setItem(K_ON, v ? '1' : '0'); }catch(e){} }
+  function get(){ try{ return JSON.parse(localStorage.getItem(K_ST) || '{}') || {}; }catch(e){ return {}; } }
+  function count(key, n){ if(!enabled()) return; var s = get(); s[key] = (s[key] || 0) + (n || 1); try{ localStorage.setItem(K_ST, JSON.stringify(s)); }catch(e){} }
+  function clear(){ try{ localStorage.removeItem(K_ST); }catch(e){} }
+  window.jtAna = { enabled:enabled, setEnabled:setEnabled, get:get, count:count, clear:clear };
+
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var cb = document.getElementById('ana-on');
+    if(!cb) return;
+    var box = document.getElementById('ana-box');
+    var NAMES = { game_started:'गेम शुरू', words_drawn:'शब्द निकाले', claims:'क्लेम', big_font:'बड़ा अक्षर', family_on:'फैमिली मोड', selfie_skip:'फोटो छोड़ी', bulk_rec:'बल्क रिकॉर्डिंग' };
+    function paint(){
+      if(!box) return;
+      var s = get(), keys = Object.keys(s);
+      if(!keys.length){ box.textContent = enabled() ? 'अभी कोई आँकड़ा नहीं — खेलते ही भरने लगेगा।' : '🔒 आँकड़े बंद हैं।'; return; }
+      box.innerHTML = keys.map(function(k){ return '• ' + (NAMES[k] || k) + ': <b>' + s[k] + '</b>'; }).join('<br>');
+    }
+    cb.checked = enabled();
+    paint();
+    cb.addEventListener('change', function(){ setEnabled(!!cb.checked); paint(); });
+    var rf = document.getElementById('ana-refresh'); if(rf) rf.addEventListener('click', paint);
+    var cl = document.getElementById('ana-clear'); if(cl) cl.addEventListener('click', function(){ clear(); paint(); });
+  });
 })();
