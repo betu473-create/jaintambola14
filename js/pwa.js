@@ -161,3 +161,47 @@ if('serviceWorker' in navigator){
     var cl = document.getElementById('ana-clear'); if(cl) cl.addEventListener('click', function(){ clear(); paint(); });
   });
 })();
+
+
+/* ============================================================
+   🙏 सहयोग करें — UPI (v6.12)
+   ------------------------------------------------------------
+   Voluntarily support. Host apna UPI ID settings me daalta hai;
+   QR + 'UPI ऐप में खोलें' button ban jaata hai. Koi payment
+   gateway nahi — seedha UPI deep-link.
+   ============================================================ */
+(function(){
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var inp = document.getElementById('upi-id');
+    var sv = document.getElementById('upi-save');
+    var box = document.getElementById('upi-box');
+    if(!inp || !box) return;
+    function load(){ try{ return localStorage.getItem('jt_upi') || ''; }catch(e){ return ''; } }
+    function render(){
+      var id = load().trim();
+      if(!id){ box.innerHTML = '<span class="muted">UPI ID डालकर सेव करें — फिर QR और भेजने का बटन दिखेगा।</span>'; return; }
+      var upi = 'upi://pay?pa=' + encodeURIComponent(id) + '&pn=' + encodeURIComponent('Tambola App') + '&cu=INR';
+      var html = '<div style="font-weight:800;font-size:1.05rem;color:#4e342e;word-break:break-all">UPI ID: ' + id + '</div>' +
+        '<div class="btn-row" style="margin-top:8px"><a class="btn small" href="' + upi + '" style="text-decoration:none">📲 UPI ऐप में खोलें</a></div>' +
+        '<div id="upi-qr" style="margin-top:10px;text-align:center"></div>' +
+        '<p class="muted" style="margin:6px 0 0;font-size:.82rem">QR स्कैन करके या UPI ID से सीधे भेज सकते हैं।</p>';
+      box.innerHTML = html;
+      try{
+        if(typeof qrcode === 'function'){
+          var q = qrcode(0, 'M'); q.addData(upi); q.make();
+          var el = document.getElementById('upi-qr');
+          if(el) el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2 });
+        }
+      }catch(e){}
+    }
+    inp.value = load();
+    render();
+    if(sv) sv.addEventListener('click', function(){
+      var v = (inp.value || '').trim();
+      try{ localStorage.setItem('jt_upi', v); }catch(e){}
+      render();
+      try{ if(typeof toast === 'function') toast(v ? '✅ UPI ID सेव हो गया' : 'UPI ID हटा दिया'); }catch(e){}
+    });
+  });
+})();
