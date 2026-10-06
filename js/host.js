@@ -715,6 +715,9 @@ function handleData(conn, d){
     saveHostState();
   } else if(d.type === 'claim'){
     handleClaim(conn, d);
+  } else if(d.type === 'selfie-skip' && d.name){
+    /* v5.9: विजेता ने फोटो देना नहीं चुना */
+    try{ toast('👍 ' + d.name + ' ने फोटो नहीं दी'); }catch(e){}
   } else if(d.type === 'winner-selfie' && d.img && d.name){
     /* विजेता के फोन से फोटो आई — सबको दिखाओ (v5.6) */
     const wlabel = PRIZE_LABELS[d.prize] || 'फुल हाउस';

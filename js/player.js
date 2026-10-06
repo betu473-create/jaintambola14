@@ -395,6 +395,8 @@ function onClaimResult(d){
 function showSelfieCard(prize){
   const c = $('selfie-card');
   if(!c) return;
+  /* v5.9: खिलाड़ी ने "आगे से फोटो न माँगें" चुना है → कार्ड न दिखाओ */
+  try{ if(localStorage.getItem('jt-no-selfie') === '1'){ try{ conn.send({ type:'selfie-skip', name:myName, prize:prize || 'full' }); }catch(e2){} return; } }catch(e){}
   c.dataset.prize = prize || 'full';
   c.style.display = 'block';
   try{ c.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
@@ -434,6 +436,16 @@ $('selfie-file').addEventListener('change', function(e){
   img.onerror = function(){ toast('⚠️ फोटो नहीं खुली — दोबारा कोशिश करें'); };
   img.src = URL.createObjectURL(f);
   e.target.value = '';
+});
+/* v5.9: फोटो छोड़ने का विकल्प (opt-out) — फोटो देना ज़रूरी नहीं */
+var _ss = $('selfie-skip');
+if(_ss) _ss.addEventListener('click', function(){
+  var prize = $('selfie-card').dataset.prize || 'full';
+  var never = $('selfie-never') && $('selfie-never').checked;
+  if(never){ try{ localStorage.setItem('jt-no-selfie','1'); }catch(e){} }
+  try{ conn.send({ type:'selfie-skip', name:myName, prize:prize }); }catch(e){}
+  $('selfie-card').style.display = 'none';
+  toast(never ? '👍 ठीक — आगे से फोटो नहीं माँगी जाएगी' : '👍 ठीक — फोटो छोड़ दी गई');
 });
 function showWinnerPhoto(d){
   if(!d || !d.img || !d.name) return;

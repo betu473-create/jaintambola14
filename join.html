@@ -70,8 +70,10 @@
     <!-- विजेता सेल्फ़ी (v5.6) -->
     <div class="card" id="selfie-card" style="display:none;background:#fff8ef;border:2px solid #2e7d32">
       <h2>📸 आप विजेता हैं — बहुत बहुत बधाई हो! 🎉</h2>
-      <p style="margin:0 0 10px">आपकी एक फोटो ली जाएगी जो <b>सबकी स्क्रीन पर</b> दिखेगी। नीचे दबाकर कैमरा खोलें।</p>
+      <p style="margin:0 0 10px">आपकी एक फोटो ली जाएगी जो <b>सबकी स्क्रीन पर</b> दिखेगी। <b>फोटो देना ज़रूरी नहीं</b> — अपनी मर्ज़ी से चुनें।</p>
       <button class="btn" id="selfie-take" type="button">📷 फोटो लें (कैमरा)</button>
+      <button class="btn ghost" id="selfie-skip" type="button" style="margin-top:6px">➡️ फोटो छोड़ें (नहीं चाहिए)</button>
+      <label class="muted" style="display:block;margin-top:10px;font-size:.85rem"><input type="checkbox" id="selfie-never"> आगे से फोटो न माँगें</label>
       <input type="file" id="selfie-file" accept="image/*" capture="user" style="display:none">
     </div>
 
