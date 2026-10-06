@@ -68,7 +68,7 @@
     <button type="button" class="btn small ghost" id="resume-no" style="border-color:#e53935;color:#c62828;margin-left:6px">✖ नया गेम बनाएँ</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="share-card">
     <h2>🔗 खिलाड़ियों को लिंक भेजें</h2>
     <div class="roomcode" id="room-code">…</div>
     <div class="linkbox">
@@ -139,6 +139,12 @@
       </label>
     </div>
     <p class="muted" style="margin:2px 0 0">चालू रहने पर: सही क्लेम अपने-आप मंज़ूर (होस्ट को दबाना नहीं पड़ेगा), गलत क्लेम तुरंत नामंज़ूर। बंद करने पर पहले जैसा — हर क्लेम पर आपका ✅/❌ निर्णय।</p>
+    <div class="btn-row" style="margin-top:8px">
+      <label class="muted" style="display:flex;gap:8px;align-items:center;padding:9px 12px;border:1.5px dashed #a1887f;border-radius:12px;width:100%;font-weight:800">
+        <input type="checkbox" id="offline-mode"> 🔒 ऑफ़लाइन (कागज़-only) मोड — कोई ऑनलाइन न जुड़े
+      </label>
+    </div>
+    <p class="muted" style="margin:2px 0 0">चालू करने पर ऐप <b>रूम बनाती ही नहीं</b> — कोई भी ऑनलाइन नहीं जुड़ सकता। गेम, शब्द निकालना और <b>कागज़ टिकट जाँच</b> (होस्ट स्क्रीन के क्लेम सेक्शन में) सब चलते रहेंगे।</p>
     <p class="muted">हर नया शब्द स्क्रीन पर बड़ा दिखेगा और ऐप उसे हिंदी में एक बार साफ़-साफ़ बोलकर सुनाएगी। नया शब्द आते ही पुराना शब्द स्क्रीन से पूरी तरह हट जाता है।</p>
     <p class="muted" style="margin:2px 0 0">🎯 गेम शुरू करने पर चुने हुए शब्दों में से ही टिकटें बनती हैं — इसलिए 90 शब्द वाला गेम तेज़ और मज़ेदार चलता है।</p>
   </div>

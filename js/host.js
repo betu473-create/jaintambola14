@@ -24,6 +24,8 @@ let autoTimer = null, autoTotal = 10, autoLeft = 0;
 let claimsFirst = true;
 let autoVerify = true;   /* v6.3: क्लेम ऑटो-सत्यापन — सिस्टम खुद जाँचे */
 try{ autoVerify = localStorage.getItem('jt_auto_verify') !== '0'; }catch(e){}
+let offlineMode = false;   /* v6.9: कागज़-only — कोई रूम नहीं */
+try{ offlineMode = localStorage.getItem('jt_offline') === '1'; }catch(e){}
 let muted = false;
 let gameStartTime = null, timerInterval = null;
 let musicAudio = null;
@@ -1348,6 +1350,24 @@ $('invite-share').addEventListener('click', function(){
   }
 });
 
+
+/* ==================== 🔒 ऑफ़लाइन (कागज़-only) मोड (v6.9) ==================== */
+function applyOfflineUI(){
+  var sc = document.getElementById('share-card');
+  if(sc) sc.style.display = offlineMode ? 'none' : '';
+  if(offlineMode){
+    try{ if(peer) peer.destroy(); }catch(e){}
+    peer = null;
+    Object.keys(conns).forEach(function(k){ delete conns[k]; });
+    Object.keys(players).forEach(function(k){ delete players[k]; });
+    try{ renderPlayers(); }catch(e){}
+    try{ if($('room-code')) $('room-code').textContent = 'ऑफ़लाइन'; }catch(e){}
+    try{ setStatus('🔒 ऑफ़लाइन (कागज़-only) मोड — कोई ऑनलाइन नहीं जुड़ सकता। शब्द निकालें; कागज़ टिकट जाँच नीचे क्लेम सेक्शन में चलती रहेगी।'); }catch(e){}
+  }else{
+    applyOfflineUI();   /* v6.9: ऑफ़लाइन मोड में रूम नहीं बनता */
+  }
+}
+
 /* ==================== शुरुआत ==================== */
 loadPrizes();
 ['jp','corner','line'].forEach(function(k){
@@ -1696,5 +1716,24 @@ function dlPrint(){
     paint();
     setInterval(function(){ fire(); paint(); }, 30000);
     fire();
+  });
+})();
+
+
+/* ============================================================
+   🔒 ऑफ़लाइन (कागज़-only) मोड — होस्ट सेटिंग (v6.9)
+   ============================================================ */
+(function(){
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var cb = document.getElementById('offline-mode');
+    if(!cb) return;
+    try{ cb.checked = !!offlineMode; }catch(e){}
+    cb.addEventListener('change', function(){
+      offlineMode = !!cb.checked;
+      try{ localStorage.setItem('jt_offline', offlineMode ? '1' : '0'); }catch(e){}
+      try{ applyOfflineUI(); }catch(e){}
+      try{ toast(offlineMode ? '🔒 ऑफ़लाइन मोड चालू — अब कोई ऑनलाइन नहीं जुड़ेगा' : '🌐 ऑनलाइन मोड — नया रूम बन गया, लिंक भेज सकते हैं'); }catch(e){}
+    });
   });
 })();

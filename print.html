@@ -87,6 +87,16 @@
         <input type="number" id="t-count" class="pp-num" value="20" min="1" max="200" inputmode="numeric">
         <button class="btn small" id="t-gen" type="button">🔄 नई टिकटें बनाएँ</button>
       </div>
+      <div class="pp-row">
+        गेम का pool:
+        <select id="t-pool" style="padding:8px 10px;border:1.5px solid #e0c9a6;border-radius:10px;font-size:1rem">
+          <option value="0">पूरी सूची (सभी …) — सुरक्षित</option>
+          <option value="60">छोटा गेम (60)</option>
+          <option value="90" selected>सामान्य (90)</option>
+          <option value="150">लंबा गेम (150)</option>
+        </select>
+      </div>
+      <div class="pp-row"><span class="muted">🎯 टिकटें इसी pool के शब्दों से बनेंगी, और यही pool होस्ट गेम में अपने-आप सेट हो जाएगा — ताकि कागज़ का फुल हाउस पूरा हो सके। कागज़ गेम के लिए "पूरी सूची" सबसे सुरक्षित है।</span></div>
       <div class="pp-row"><span class="muted">हर टिकट अलग-अलग शब्दों के साथ बनती है। नाम लिखने की जगह खाली रहती है।</span></div>
       <div class="pp-row" style="align-items:center">
         <span class="muted" id="reg-info" style="flex:1">📚 रजिस्टर…</span>
@@ -158,6 +168,10 @@
     if(isNaN(n) || n < 1) n = 1;
     if(n > 200) n = 200;
     $('t-count').value = n;
+    var poolSel = 0;
+    try{ poolSel = parseInt(($('t-pool') && $('t-pool').value) || '0', 10) || 0; }catch(e){ poolSel = 0; }
+    var src = (poolSel > 0 && poolSel < SHABD_LIST.length) ? shuffle(SHABD_LIST.slice()).slice(0, poolSel) : SHABD_LIST.slice();
+    try{ localStorage.setItem('jt_gamewords', String(poolSel)); }catch(e){}
     var reg = loadReg();
     var start = nextSerial(reg);
     var batch = [];
@@ -166,7 +180,7 @@
     for(var i = 0; i < n; i += per){
       html += '<div class="tickets-page" style="display:grid;grid-template-columns:1fr 1fr;gap:4mm">';
       for(var k = i; k < Math.min(i + per, n); k++){
-        var words = shuffle(SHABD_LIST.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
+        var words = shuffle(src.slice()).slice(0, JT_CONFIG.TICKET_CELLS);
         var serial = start + k;
         batch.push({ serial: serial, words: words });
         html += ticketHTML(serial, words);
@@ -223,6 +237,12 @@
 
   renderRegInfo();
   if(SHABD_LIST && SHABD_LIST.length) genTickets(false);
+  (function(){
+    try{
+      var o = document.getElementById('t-pool');
+      if(o && o.options && o.options[0]) o.options[0].textContent = 'पूरी सूची (सभी ' + SHABD_LIST.length + ') — सुरक्षित';
+    }catch(e){}
+  })();
 })();
 </script>
 
