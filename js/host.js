@@ -592,6 +592,7 @@ function drawWord(){
   const w = deck.pop();
   const num = shabdNumber(w);
   try{ if(window.jtAna) jtAna.count('words_drawn'); }catch(e){}
+  try{ renderLivePanel(); }catch(e){}
   drawn.push(w);
   drawnSet.add(w);
   try{ dlAddWord(w, num); }catch(e){}   /* v5.9: स्थायी ड्रॉ लॉग */
@@ -1391,6 +1392,43 @@ try{
   $('resume-banner').style.display = 'block';
 })();
 
+
+/* ==================== 📊 लाइव स्थिति — सभी कागज़ टिकट (v6.11) ==================== */
+/* कोई marking नहीं — register की सारी टिकटें, जो सबसे भरी वो ऊपर। */
+function renderLivePanel(){
+  var box = document.getElementById('live-list');
+  if(!box) return;
+  var reg = {};
+  try{ reg = JSON.parse(localStorage.getItem('jt_paper_tickets')) || {}; }catch(e){ reg = {}; }
+  var keys = Object.keys(reg);
+  if(!keys.length){
+    box.innerHTML = '<span class="muted">कोई कागज़ टिकट नहीं — Print Center से टिकट बनाएँ, फिर यहाँ दिखेंगी।</span>';
+    return;
+  }
+  var ds = {};
+  drawn.forEach(function(w){ ds[w] = true; });
+  var rows = keys.map(function(k){
+    var words = reg[k] || [];
+    var ok = 0;
+    words.forEach(function(w){ if(ds[w]) ok++; });
+    return { num: parseInt(k, 10), ok: ok, total: words.length };
+  });
+  rows.sort(function(a, b){ return (b.ok - a.ok) || (a.num - b.num); });
+  var done = rows.filter(function(r){ return r.total && r.ok === r.total; }).length;
+  var top = rows.slice(0, 15);
+  box.innerHTML =
+    '<div class="muted" style="margin-bottom:6px">कुल <b>' + rows.length + '</b> टिकट • पूरी हो चुकीं: <b>' + done + '</b></div>' +
+    top.map(function(r){
+      var full = r.total && r.ok === r.total;
+      var left = r.total - r.ok;
+      var icon = full ? '🎉' : (left <= 1 ? '🔥' : '•');
+      var col = full ? '#1b5e20' : (left <= 1 ? '#bf360c' : '#3e2723');
+      return '<div style="padding:4px 0;font-weight:' + (full || left <= 1 ? '900' : '700') + ';color:' + col + '">' +
+        icon + ' टिकट #' + r.num + ' — ' + r.ok + '/' + r.total +
+        (full ? ' पूरी! 🎉' : ' (' + left + ' बचे)') + '</div>';
+    }).join('');
+}
+
 /* ==================== कागज़ टिकट जाँच (v5.6.18) ==================== */
 (function(){
   var btn = document.getElementById('pc-check');
@@ -1620,6 +1658,20 @@ function dlPrint(){
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', upd);
   else upd();
+})();
+
+
+/* ============================================================
+   📊 लाइव स्थिति — ताज़ा करने वाला बटन + शुरुआती रेंडर (v6.11)
+   ============================================================ */
+(function(){
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var rf = document.getElementById('live-refresh');
+    if(rf) rf.addEventListener('click', function(){ try{ renderLivePanel(); toast('🔄 ताज़ा किया'); }catch(e){} });
+    try{ renderLivePanel(); }catch(e){}
+    setInterval(function(){ try{ renderLivePanel(); }catch(e){} }, 5000);
+  });
 })();
 
 
