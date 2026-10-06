@@ -121,11 +121,11 @@
       </select>
     </div>
     <div class="btn-row" style="margin-top:8px">
-      <select id="full-count" aria-label="फुल हाउस कितने जीतेंगे">
-        <option value="1">🏆 फुल हाउस: 1 विजेता (पहली जीत पर गेम बंद)</option>
-        <option value="2">🏆 फुल हाउस: 2 विजेता (दो जीत तक गेम चलेगा)</option>
-        <option value="3">🏆 फुल हाउस: 3 विजेता (तीन जीत तक गेम चलेगा)</option>
-      </select>
+      <label class="muted" style="display:flex;gap:8px;align-items:center;padding:9px 12px;border:1.5px solid #e0c9a6;border-radius:12px;width:100%;font-weight:800;flex-wrap:wrap">
+        🏆 फुल हाउस कितने जीतेंगे:
+        <input type="number" id="full-count" min="1" max="50" value="1" inputmode="numeric" style="width:84px;padding:8px 10px;border:1.5px solid #e0c9a6;border-radius:10px;font-size:1rem">
+        <span class="muted" style="font-size:.82rem;font-weight:400">(1 = पहली जीत पर बंद • जितने चाहो, जैसे 5 — स्पॉन्सर के लिए)</span>
+      </label>
     </div>
     <div class="btn-row" style="margin-top:8px">
       <label class="muted" style="display:flex;gap:8px;align-items:center;padding:9px 12px;border:1.5px dashed #ffb74d;border-radius:12px;width:100%;font-weight:800">

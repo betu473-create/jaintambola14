@@ -15,7 +15,7 @@ let started = false, winnerFull = null, fullWinners = [];
 let familyMode = false;   /* v6.0: फैमिली मोड — एक फ़ोन पर कई टिकट */
 try{ familyMode = localStorage.getItem('jt_family') === '1'; }catch(e){}   /* v5.6.19: 1/2/3 फुल हाउस विजेता */
 function fullTarget(){
-  try{ var v = parseInt(localStorage.getItem("jt_full_count"), 10); if(v === 2 || v === 3) return v; }catch(e){}
+  try{ var v = parseInt(localStorage.getItem("jt_full_count"), 10); if(v >= 1 && v <= 50) return v; }catch(e){}
   return 1;
 }
 let deck = [], drawn = [];
@@ -1078,7 +1078,7 @@ $('start-btn').addEventListener('click', function(){
   /* v5.6.19: फुल हाउस जीत की संख्या याद रखो */
   try{
     var fc = parseInt(($('full-count') && $('full-count').value) || '1', 10);
-    if(fc !== 2 && fc !== 3) fc = 1;
+    if(!(fc >= 1 && fc <= 50)) fc = 1;
     localStorage.setItem('jt_full_count', String(fc));
   }catch(e){}
   const poolAll = SHABD_LIST.slice();
@@ -1108,7 +1108,7 @@ try{
   if($('full-count')) $('full-count').value = String(_fc0);
   if($('full-count')) $('full-count').addEventListener('change', function(){
     var v = parseInt($('full-count').value, 10);
-    if(v !== 2 && v !== 3) v = 1;
+    if(!(v >= 1 && v <= 50)) v = 1;
     try{ localStorage.setItem('jt_full_count', String(v)); }catch(e){}
     toast('🏆 फुल हाउस जीत: ' + v + ' विजेता ' + (v > 1 ? '— गेम ' + v + ' जीत तक चलेगा' : '— पहली जीत पर बंद'));
   });
