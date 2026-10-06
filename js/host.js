@@ -1063,6 +1063,16 @@ $('start-btn').addEventListener('click', function(){
   let gw = 0;
   try{ gw = parseInt(($('game-words') && $('game-words').value) || '90', 10) || 0; }catch(e){ gw = 0; }
   try{ localStorage.setItem('jt_gamewords', String(gw)); }catch(e){}
+  /* v6.8: कागज़ टिकट (pool) mismatch चेतावनी */
+  try{
+    var _reg = JSON.parse(localStorage.getItem('jt_paper_tickets') || '{}');
+    var _pn = Object.keys(_reg || {}).length;
+    if(_pn > 0 && gw > 0){
+      var _all = (typeof SHABD_LIST !== 'undefined' && SHABD_LIST) ? SHABD_LIST.length : 0;
+      try{ toast('⚠️ रजिस्टर में ' + _pn + ' कागज़ टिकट हैं, पर गेम सिर्फ ' + gw + ' शब्दों का!'); }catch(e){}
+      setStatus('⚠️ ध्यान दें: रजिस्टर में ' + _pn + ' कागज़ टिकट हैं, पर गेम सिर्फ ' + gw + ' शब्दों के pool से चलेगा। कागज़ टिकट के शब्द इस pool में न हों तो उनका फुल हाउस पूरा नहीं हो सकेगा — कागज़ गेम के लिए "पूरी सूची (सभी ' + _all + ')" चुनें।');
+    }
+  }catch(e){}
   /* v5.6.19: फुल हाउस जीत की संख्या याद रखो */
   try{
     var fc = parseInt(($('full-count') && $('full-count').value) || '1', 10);
