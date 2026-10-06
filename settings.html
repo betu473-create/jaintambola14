@@ -118,6 +118,13 @@
     <div id="upi-box" style="margin-top:10px"></div>
   </div>
 
+  <!-- 🔑 PIN बदलें (v6.13) -->
+  <div class="card">
+    <h2>🔑 PIN बदलें</h2>
+    <p class="muted" style="margin:0 0 8px;font-size:.92rem">होस्ट स्क्रीन का PIN यहाँ से बदल सकते हैं। पहले <b>अभी का PIN</b>, फिर <b>नया 4-अंकों का PIN</b>।</p>
+    <button class="btn" id="pin-change-btn" type="button" style="width:100%">🔑 PIN बदलें</button>
+  </div>
+
   <!-- ऐप जानकारी -->
   <!-- 🔄 नया वर्ज़न लाओ (v5.6.22) -->
   <div class="card">
@@ -255,6 +262,43 @@
   });
 })();
 
+</script>
+<script>
+/* 🔑 PIN बदलें — settings से (v6.13) */
+(function(){
+  var HOST_PIN_HASH = 'f898c0e2fa3b9767f4e8e8e98c4a29bb98664b2a6f7b9e67129aa90915ed8a4a';
+  function _sha256hex(s){
+    if(!(window.crypto && window.crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+      .then(function(b){ var h='', a=new Uint8Array(b); for(var i=0;i<a.length;i++){ h += ('0'+a[i].toString(16)).slice(-2); } return h; })
+      .catch(function(){ return null; });
+  }
+  function _curPinHash(){ try{ return localStorage.getItem('jt-pin-hash') || HOST_PIN_HASH; }catch(e){ return HOST_PIN_HASH; } }
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var b = document.getElementById('pin-change-btn');
+    if(!b) return;
+    b.addEventListener('click', function(){
+      var cur = window.prompt('अभी का PIN डालें:');
+      if(cur === null) return;
+      _sha256hex(String(cur).trim()).then(function(h){
+        if(!h || h !== _curPinHash()){ window.alert('गलत PIN — बदलाव नहीं हुआ।'); return; }
+        var np = window.prompt('नया 4-अंकों का PIN डालें:');
+        if(np === null) return;
+        np = String(np).trim();
+        if(!/^[0-9]{4}$/.test(np)){ window.alert('PIN 4 अंकों का होना चाहिए (सिर्फ़ अंक)।'); return; }
+        var np2 = window.prompt('नया PIN दोबारा डालें:');
+        if(np2 === null) return;
+        if(String(np2).trim() !== np){ window.alert('दोनों PIN मेल नहीं खाए।'); return; }
+        _sha256hex(np).then(function(h2){
+          if(!h2){ window.alert('इस ब्राउज़र में PIN सेट नहीं हो सकता।'); return; }
+          try{ localStorage.setItem('jt-pin-hash', h2); }catch(e){}
+          window.alert('✅ नया PIN सेट हो गया! अब इसी PIN से होस्ट स्क्रीन खुलेगी।');
+        });
+      });
+    });
+  });
+})();
 </script>
 <div class="toast" id="saved-toast"></div>
 </body>
