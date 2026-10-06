@@ -75,3 +75,31 @@ if('serviceWorker' in navigator){
     }, 2500);
   });
 })();
+
+
+/* ============================================================
+   🔎 बड़ा फ़ॉन्ट / Accessibility mode (v5.9)
+   ------------------------------------------------------------
+   - html par 'jt-big' class लगाता है → सारे rem फ़ॉन्ट बड़े
+   - हर पेज पर नीचे-बाएँ एक छोटा बटन ख़ुद बन जाता है (toggle)
+   - पसंद फ़ोन में याद रहती है (localStorage: jt-big)
+   ============================================================ */
+(function(){
+  function on(){ try{ return localStorage.getItem('jt-big') === '1'; }catch(e){ return false; } }
+  function apply(){ try{ document.documentElement.classList.toggle('jt-big', on()); }catch(e){} }
+  function label(){ return on() ? '🔎 सामान्य अक्षर' : '🔎 बड़ा अक्षर'; }
+  function addBtn(){
+    if(document.getElementById('jt-a11y-btn')) return;
+    var b = document.createElement('button');
+    b.id = 'jt-a11y-btn'; b.type = 'button'; b.textContent = label();
+    b.title = 'अक्षर छोटे/बड़े करें';
+    b.addEventListener('click', function(){
+      try{ localStorage.setItem('jt-big', on() ? '0' : '1'); }catch(e){}
+      apply(); b.textContent = label();
+    });
+    (document.body || document.documentElement).appendChild(b);
+  }
+  function start(){ apply(); addBtn(); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
