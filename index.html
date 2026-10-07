@@ -7,8 +7,8 @@
 <title>जैन ताम्बोला — JAIN TAMBOLA</title>
 <meta name="description" content="ऑनलाइन जैन ताम्बोला — होस्ट के लिंक से जुड़ें, डिजिटल टिकट लें, शब्द हिंदी में सुनें और फुल हाउस पर क्लेम करें।">
 <link rel="manifest" href="./manifest.json">
-<link rel="icon" type="image/png" href="./icons/icon-192.png">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" href="./icons/icon-192.png?v=2">
+<link rel="apple-touch-icon" href="./icons/icon-192.png?v=2">
 <meta name="theme-color" content="#e65100">
 <link rel="stylesheet" href="./css/style.css">
 <style>
@@ -16,6 +16,24 @@
 </style>
 </head>
 <body>
+<div id="jt-splash">
+  <img src="./icons/logo.jpg?v=2" alt="जैन ताम्बोला">
+  <div class="jt-splash-name">जैन ताम्बोला</div>
+</div>
+<style>
+#jt-splash{position:fixed;inset:0;z-index:99999;background:#fff8ec;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .45s ease}
+#jt-splash img{width:132px;height:132px;border-radius:50%;object-fit:cover;box-shadow:0 8px 26px rgba(191,54,12,.22);animation:jtsPop .6s cubic-bezier(.2,1.4,.4,1)}
+.jt-splash-name{font-weight:900;color:#e65100;font-size:1.25rem;letter-spacing:.5px;font-family:'Noto Sans Devanagari',system-ui,sans-serif}
+@keyframes jtsPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+</style>
+<script>
+(function(){
+  function hide(){ var s=document.getElementById('jt-splash'); if(!s) return; s.style.opacity='0'; setTimeout(function(){ if(s&&s.parentNode) s.parentNode.removeChild(s); },480); }
+  if(document.readyState==='complete'){ setTimeout(hide,900); } else { window.addEventListener('load', function(){ setTimeout(hide,700); }); }
+  setTimeout(hide, 2500);
+})();
+</script>
+
 <div class="wrap">
   <div class="topbar">
     <div class="brand">॥ जैन ताम्बोला ॥</div>
@@ -27,7 +45,7 @@
   <div class="card" style="text-align:center">
     <div class="logo-wrap">
       <div class="logo-blur"></div>
-      <img src="./icons/logo.jpg" alt="जैन ताम्बोला" style="width:100px;height:100px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.15)">
+      <img src="./icons/logo.jpg?v=2" alt="जैन ताम्बोला" style="width:100px;height:100px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.15)">
     </div>
     <div style="margin-top:8px;font-size:.95rem;font-weight:800;color:#a0522d;letter-spacing:.2px">— Designed by <span style="color:#5d4037">Himanshu Jain</span> —</div>
     <h2 style="font-size:1.3rem;margin:10px 0 6px">ऑनलाइन जैन ताम्बोला</h2>
