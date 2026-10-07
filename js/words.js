@@ -885,6 +885,6 @@ try{
   var _ownNow = (localStorage.getItem('jt-own-mode') === '1') || /[?&]own=1/.test(location.search || '');
   if(_ownNow){
     try{ localStorage.setItem('jt-own-mode','1'); }catch(e){}
-    if(!jtCustomList){ SHABD_LIST.splice(0, SHABD_LIST.length); }
+    SHABD_LIST.splice(0, SHABD_LIST.length);   /* own-mode: hamari suchi hamesha khaali */
   }
 }catch(e){}

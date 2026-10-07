@@ -349,5 +349,32 @@
 </script>
 <!-- host.js compatibility (word-add card removed in v5.5) -->
 <button id="word-add-btn" type="button" hidden></button>
+
+<script>
+/* 🧑‍💻 अपना गेम मोड — banner + share-card chhupana (v6.14.4) */
+(function(){
+  function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function(){
+    var on = false;
+    try{ on = (localStorage.getItem('jt-own-mode') === '1') || /[?&]own=1/.test(location.search || ''); }catch(e){}
+    if(on){ try{ localStorage.setItem('jt-own-mode','1'); }catch(e){} }
+    var b = document.getElementById('own-banner');
+    if(b) b.style.display = on ? 'block' : 'none';
+    var sc = document.getElementById('share-card');
+    if(sc) sc.style.display = on ? 'none' : '';
+    var ex = document.getElementById('own-exit');
+    if(ex) ex.addEventListener('click', function(){
+      try{ localStorage.removeItem('jt-own-mode'); }catch(e){}
+      if(b) b.style.display = 'none';
+      if(sc) sc.style.display = '';
+      try{ toast('🔚 अपना गेम मोड बंद — अब सामान्य मोड'); }catch(e){}
+      try{ location.href = './host.html'; }catch(e){}
+    });
+    if(on){
+      try{ if(typeof SHABD_LIST !== 'undefined' && SHABD_LIST.length < 12){ try{ toast('🧑‍💻 पहले अपने शब्द जोड़ें (📖 शब्द सूची मैनेजर) — कम से कम 12'); }catch(e){} } }catch(e){}
+    }
+  });
+})();
+</script>
 </body>
 </html>
