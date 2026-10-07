@@ -182,7 +182,7 @@ if('serviceWorker' in navigator){
       var _own = (localStorage.getItem('jt-own-mode') === '1') || /[?&]own=1/.test(location.search || '');
       if(_own){ var uc = document.getElementById('upi-card'); if(uc) uc.style.display = 'none'; }
     }catch(e){}
-    var DEFAULT_UPI = 'himanshujain@sbi';   /* v6.17: app mein BAKED — site-data clear ke baad bhi rahega */
+    var DEFAULT_UPI = 'himansujain@sbi';   /* v6.17: app mein BAKED — site-data clear ke baad bhi rahega */
     function load(){ try{ return localStorage.getItem('jt_upi') || DEFAULT_UPI; }catch(e){ return DEFAULT_UPI; } }
     function render(){
       var id = load().trim();
