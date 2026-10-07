@@ -188,10 +188,21 @@ if('serviceWorker' in navigator){
       if(!id){ box.innerHTML = '<span class="muted">UPI ID डालकर सेव करें — फिर QR और भेजने का बटन दिखेगा।</span>'; return; }
       var upi = 'upi://pay?pa=' + encodeURIComponent(id) + '&pn=' + encodeURIComponent('Tambola App') + '&cu=INR';
       var html = '<div style="font-weight:800;font-size:1.05rem;color:#4e342e;word-break:break-all">UPI ID: ' + id + '</div>' +
-        '<div class="btn-row" style="margin-top:8px"><a class="btn small" href="' + upi + '" style="text-decoration:none">📲 UPI ऐप में खोलें</a></div>' +
+        '<div class="btn-row" style="margin-top:8px">' +
+          '<a class="btn small" href="' + upi + '" style="text-decoration:none">📲 UPI ऐप में खोलें</a>' +
+          '<button class="btn small ghost" id="upi-copy" type="button">📋 UPI ID कॉपी करें</button>' +
+        '</div>' +
         '<div id="upi-qr" style="margin-top:10px;text-align:center"></div>' +
-        '<p class="muted" style="margin:6px 0 0;font-size:.82rem">QR स्कैन करके या UPI ID से सीधे भेज सकते हैं।</p>';
+        '<p class="muted" style="margin:6px 0 0;font-size:.82rem">QR स्कैन करें, या UPI ID कॉपी करके अपने UPI ऐप में भेजें।<br>(ऐप में "UPI ऐप में खोलें" न चले तो QR या कॉपी इस्तेमाल करें।)</p>';
       box.innerHTML = html;
+      try{
+        var cpy = document.getElementById('upi-copy');
+        if(cpy) cpy.addEventListener('click', function(){
+          function done(){ try{ if(typeof toast==='function') toast('📋 UPI ID कॉपी हो गई — UPI ऐप में paste करें'); }catch(e){} }
+          function fb(){ try{ var ta=document.createElement('textarea'); ta.value=id; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); }catch(e){ try{ window.prompt('UPI ID:', id); }catch(e2){} } }
+          try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(done).catch(fb); } else fb(); }catch(e){ fb(); }
+        });
+      }catch(e){}
       try{
         if(typeof qrcode === 'function'){
           var q = qrcode(0, 'M'); q.addData(upi); q.make();
