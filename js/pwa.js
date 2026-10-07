@@ -177,6 +177,11 @@ if('serviceWorker' in navigator){
     var sv = document.getElementById('upi-save');
     var box = document.getElementById('upi-box');
     if(!inp || !box) return;
+    /* v6.14.5: 'अपना गेम' मोड में payment QR (developer ka) na dikhe */
+    try{
+      var _own = (localStorage.getItem('jt-own-mode') === '1') || /[?&]own=1/.test(location.search || '');
+      if(_own){ var uc = document.getElementById('upi-card'); if(uc) uc.style.display = 'none'; }
+    }catch(e){}
     function load(){ try{ return localStorage.getItem('jt_upi') || ''; }catch(e){ return ''; } }
     function render(){
       var id = load().trim();
