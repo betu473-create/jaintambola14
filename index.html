@@ -39,6 +39,8 @@
 
   <a class="btn" id="host-entry" href="./host.html">🎙 गेम होस्ट करें (होस्ट स्क्रीन)</a>
   <a class="btn green" id="join-entry" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
+  <a class="btn ghost" id="own-entry" href="./host.html">🧑‍💻 अपना गेम बनाएँ (अपने शब्दों से)</a>
+  <p class="muted" style="text-align:center;margin:6px 0 0;font-size:.82rem">अपने शब्दों से अपना तांबोला चलाएँ। <b>हमारी शब्द-सूची / डेटा</b> से होस्ट करना चाहते हैं? तो <b>ऐप डेवलपर से संपर्क करें</b>।</p>
   <p class="muted" id="role-switch" style="text-align:center;margin:6px 0 0;font-size:.85rem;display:none">गलती से गलत रोल चुना? <a href="#" id="role-reset" style="text-decoration:underline">रोल बदलें</a></p>
 
   <!-- होस्ट PIN लॉक (v5.6.6) -->
@@ -78,6 +80,11 @@
       sw.style.display = 'block';
     }
     joinBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','player'); }catch(e){} });
+
+    /* v6.14: 'अपना गेम' मोड — player apne shabdon se host kar sakta hai (hamara data nahi) */
+    var ownBtn = document.getElementById('own-entry');
+    if(ownBtn) ownBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-own-mode','1'); }catch(e){} });
+    if(hostBtn) hostBtn.addEventListener('click', function(){ try{ localStorage.removeItem('jt-own-mode'); }catch(e){} });
 
     /* होस्ट बटन: पहले PIN (v5.6.6) — सही PIN पर यह फोन 'खुला' याद रहता है */
     var HOST_PIN_HASH = 'f898c0e2fa3b9767f4e8e8e98c4a29bb98664b2a6f7b9e67129aa90915ed8a4a';
