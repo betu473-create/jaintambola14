@@ -37,7 +37,10 @@
     </p>
   </div>
 
-  <a class="btn" id="host-entry" href="./host.html">🎙 गेम होस्ट करें (होस्ट स्क्रीन)</a>
+  <div class="btn-row">
+    <a class="btn" id="host-entry" href="./host.html">🎙 गेम होस्ट करें</a>
+    <button class="btn ghost" id="share-list-btn" type="button">📤 शब्द सूची भेजें</button>
+  </div>
   <a class="btn green" id="join-entry" href="./join.html">🎯 गेम में शामिल हों (खिलाड़ी)</a>
   <a class="btn ghost" id="own-entry" href="./host.html">🧑‍💻 अपना गेम बनाएँ (अपने शब्दों से)</a>
   <p class="muted" style="text-align:center;margin:6px 0 0;font-size:.82rem">अपने शब्दों से अपना तांबोला चलाएँ। <b>हमारी शब्द-सूची / डेटा</b> से होस्ट करना चाहते हैं? तो <b>ऐप डेवलपर से संपर्क करें</b>।</p>
@@ -63,6 +66,7 @@
   <div class="designed-by">Designed by <b>Himanshu Jain</b> (7747957576) <span style="opacity:.55">• v5.8.20</span></div>
   <p class="muted" style="text-align:center;margin-top:4px">॥ वंदे श्री गुरू तारणम् ॥</p>
 </div>
+<script src="./js/words.js"></script>
 <script src="./js/pwa.js"></script>
 <script>
 /* रोल याद रखो: जिस बटन पर एक बार टैप किया, उसी फोन पर अब से वही बटन दिखेगा */
@@ -80,6 +84,22 @@
       sw.style.display = 'block';
     }
     joinBtn.addEventListener('click', function(){ try{ localStorage.setItem('jt-role','player'); }catch(e){} });
+
+    /* v6.15: 📤 शब्द सूची भेजें — poori list copy (WhatsApp me paste karne ke liye) */
+    function jtShareList(){
+      var words = (typeof SHABD_LIST !== 'undefined' && SHABD_LIST) ? SHABD_LIST.slice() : [];
+      if(words.length < 1){ try{ alert('सूची खाली है — पहले शब्द जोड़ें'); }catch(e){} return; }
+      var text = words.join('\n');
+      function done(){ try{ if(typeof toast==='function') toast('📋 ' + words.length + ' शब्द कॉपी हो गए — WhatsApp में paste कर दें'); else alert('📋 सूची कॉपी हो गई (' + words.length + ' शब्द) — WhatsApp में paste कर दें'); }catch(e){} }
+      function fallback(){
+        try{ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); }
+        catch(e){ try{ window.prompt('सूची कॉपी करें (Ctrl+C):', text); }catch(e2){} }
+      }
+      try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); } else fallback(); }
+      catch(e){ fallback(); }
+    }
+    var slb = document.getElementById('share-list-btn');
+    if(slb) slb.addEventListener('click', jtShareList);
 
     /* v6.14: 'अपना गेम' मोड — player apne shabdon se host kar sakta hai (hamara data nahi) */
     var ownBtn = document.getElementById('own-entry');

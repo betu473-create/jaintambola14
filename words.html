@@ -156,6 +156,7 @@
     <div class="wl-grid" id="wl-grid"></div>
     <button class="btn" id="wl-dedupe" type="button" style="width:100%;margin-top:6px;background:#c62828;color:#fff;border-color:#c62828">🔍 डुप्लिकेट प्रबंधक खोलें</button>
     <button class="btn ghost" id="wl-print-btn" type="button" style="width:100%;margin-top:6px">📄 मेरी सूची का PDF / प्रिंट करें</button>
+    <button class="btn ghost" id="wl-share-btn" type="button" style="width:100%;margin-top:6px">📤 शब्द सूची भेजें (WhatsApp/कॉपी)</button>
     <details class="wl-danger">
       <summary>⚙️ और विकल्प</summary>
       <p class="muted" style="font-size:.82rem;margin:6px 0 8px;text-align:center">यह बटन आपके सारे बदलाव हटाकर डिफ़ॉल्ट सूची वापस लाता है — सिर्फ़ ज़रूरत पड़ने पर दबाइए। (आपके “डुप्लिकेट नहीं” वाले निशान बने रहेंगे।)</p>
@@ -914,6 +915,24 @@
     setTimeout(function(){ try{ window.print(); }catch(e){} }, 80);
   }
   document.getElementById('wl-print-btn').addEventListener('click', buildPrint);
+
+  /* v6.15: 📤 शब्द सूची भेजें */
+  (function(){
+    var b = document.getElementById('wl-share-btn');
+    if(!b) return;
+    b.addEventListener('click', function(){
+      var words = (typeof SHABD_LIST !== 'undefined' && SHABD_LIST) ? SHABD_LIST.slice() : [];
+      if(words.length < 1){ toast('सूची खाली है'); return; }
+      var text = words.join('\n');
+      function done(){ toast('📋 ' + words.length + ' शब्द कॉपी हो गए — WhatsApp में paste कर दें'); }
+      function fallback(){
+        try{ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); }
+        catch(e){ try{ window.prompt('सूची कॉपी करें (Ctrl+C):', text); }catch(e2){} }
+      }
+      try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); } else fallback(); }
+      catch(e){ fallback(); }
+    });
+  })();
   badgeEl.addEventListener('click', function(){ if(dupCount()>0) openManager(); });
 
   /* ==================== डिफ़ॉल्ट पर लौटें ==================== */
